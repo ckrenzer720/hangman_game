@@ -384,7 +384,7 @@ hangman_game/
 
 ### Phase 1: Core Foundation (Week 1)
 
-- [ ] Basic HTML structure
+- [x] Basic HTML structure
 - [ ] CSS layout and styling
 - [ ] Basic JavaScript game logic
 - [ ] Simple word list implementation
