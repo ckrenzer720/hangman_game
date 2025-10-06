@@ -1,0 +1,612 @@
+/* ========================================
+   HANGMAN GAME - RESPONSIVE STYLES
+   ======================================== */
+
+/* ========================================
+   MOBILE FIRST APPROACH
+   ======================================== */
+
+/* Base styles are mobile-first (already defined in main.css) */
+
+/* ========================================
+   SMALL MOBILE DEVICES (320px - 480px)
+   ======================================== */
+
+@media (max-width: 480px) {
+  :root {
+    --spacing-xs: 0.2rem;
+    --spacing-sm: 0.4rem;
+    --spacing-md: 0.8rem;
+    --spacing-lg: 1.2rem;
+    --spacing-xl: 1.6rem;
+    --spacing-xxl: 2.4rem;
+  }
+
+  .game-container {
+    padding: var(--spacing-sm);
+    gap: var(--spacing-md);
+  }
+
+  .game-header h1 {
+    font-size: 1.8rem;
+    letter-spacing: 1px;
+  }
+
+  .game-main {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
+    gap: var(--spacing-lg);
+  }
+
+  .hangman-section {
+    grid-column: 1;
+    grid-row: 1;
+    min-height: 250px;
+    padding: var(--spacing-lg);
+  }
+
+  .hangman-figure {
+    width: 150px;
+    height: 200px;
+  }
+
+  .word-section {
+    grid-column: 1;
+    grid-row: 2;
+    padding: var(--spacing-lg);
+  }
+
+  .word-display {
+    font-size: 1.8rem;
+    letter-spacing: 0.3rem;
+    min-height: 60px;
+  }
+
+  .word-letter {
+    font-size: 1.8rem;
+    min-width: 1.5rem;
+    margin: 0 0.1rem;
+  }
+
+  .keyboard-section {
+    grid-column: 1;
+    grid-row: 3;
+    padding: var(--spacing-lg);
+  }
+
+  .virtual-keyboard {
+    grid-template-columns: repeat(7, 1fr);
+    gap: var(--spacing-xs);
+  }
+
+  .keyboard-key {
+    padding: var(--spacing-sm);
+    font-size: 1rem;
+    min-height: 40px;
+  }
+
+  .controls-section {
+    grid-column: 1;
+    grid-row: 4;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
+  }
+
+  .btn {
+    width: 100%;
+    padding: var(--spacing-md);
+    font-size: 1rem;
+  }
+
+  .modal-content {
+    padding: var(--spacing-xl);
+    margin: var(--spacing-md);
+  }
+
+  .modal-content h2 {
+    font-size: 1.5rem;
+  }
+
+  .modal-content p {
+    font-size: 1rem;
+  }
+
+  .game-stats {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  .difficulty-selector {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+
+  .difficulty-btn {
+    width: 100%;
+  }
+
+  .category-selector {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+
+  .category-btn {
+    width: 100%;
+  }
+}
+
+/* ========================================
+   LARGE MOBILE DEVICES (481px - 768px)
+   ======================================== */
+
+@media (min-width: 481px) and (max-width: 768px) {
+  .game-container {
+    padding: var(--spacing-md);
+  }
+
+  .game-header h1 {
+    font-size: 2rem;
+  }
+
+  .game-main {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
+    gap: var(--spacing-lg);
+  }
+
+  .hangman-section {
+    grid-column: 1;
+    grid-row: 1;
+    min-height: 300px;
+  }
+
+  .hangman-figure {
+    width: 180px;
+    height: 250px;
+  }
+
+  .word-section {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .word-display {
+    font-size: 2rem;
+    letter-spacing: 0.4rem;
+  }
+
+  .word-letter {
+    font-size: 2rem;
+    min-width: 1.8rem;
+  }
+
+  .keyboard-section {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  .virtual-keyboard {
+    grid-template-columns: repeat(9, 1fr);
+    gap: var(--spacing-sm);
+  }
+
+  .keyboard-key {
+    min-height: 45px;
+  }
+
+  .controls-section {
+    grid-column: 1;
+    grid-row: 4;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .btn {
+    min-width: 100px;
+    flex: 1;
+    max-width: 150px;
+  }
+}
+
+/* ========================================
+   TABLET DEVICES (769px - 1024px)
+   ======================================== */
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .game-container {
+    padding: var(--spacing-lg);
+  }
+
+  .game-main {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto auto;
+    gap: var(--spacing-xl);
+  }
+
+  .hangman-section {
+    grid-column: 1;
+    grid-row: 1 / 3;
+    min-height: 350px;
+  }
+
+  .hangman-figure {
+    width: 200px;
+    height: 280px;
+  }
+
+  .word-section {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .word-display {
+    font-size: 2.2rem;
+    letter-spacing: 0.4rem;
+  }
+
+  .word-letter {
+    font-size: 2.2rem;
+    min-width: 2rem;
+  }
+
+  .keyboard-section {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .virtual-keyboard {
+    grid-template-columns: repeat(11, 1fr);
+    gap: var(--spacing-sm);
+  }
+
+  .controls-section {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+}
+
+/* ========================================
+   DESKTOP DEVICES (1025px - 1440px)
+   ======================================== */
+
+@media (min-width: 1025px) and (max-width: 1440px) {
+  .game-container {
+    padding: var(--spacing-xl);
+  }
+
+  .game-main {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto auto;
+    gap: var(--spacing-xxl);
+  }
+
+  .hangman-section {
+    grid-column: 1;
+    grid-row: 1 / 3;
+    min-height: 400px;
+  }
+
+  .hangman-figure {
+    width: 220px;
+    height: 320px;
+  }
+
+  .word-section {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .word-display {
+    font-size: 2.5rem;
+    letter-spacing: 0.5rem;
+  }
+
+  .word-letter {
+    font-size: 2.5rem;
+    min-width: 2.2rem;
+  }
+
+  .keyboard-section {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .virtual-keyboard {
+    grid-template-columns: repeat(13, 1fr);
+    gap: var(--spacing-sm);
+  }
+
+  .controls-section {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+}
+
+/* ========================================
+   LARGE DESKTOP DEVICES (1441px+)
+   ======================================== */
+
+@media (min-width: 1441px) {
+  .game-container {
+    max-width: 1400px;
+    padding: var(--spacing-xxl);
+  }
+
+  .game-main {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 3rem;
+  }
+
+  .hangman-section {
+    grid-column: 1;
+    grid-row: 1 / 3;
+    min-height: 450px;
+  }
+
+  .hangman-figure {
+    width: 250px;
+    height: 350px;
+  }
+
+  .word-section {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .word-display {
+    font-size: 3rem;
+    letter-spacing: 0.6rem;
+  }
+
+  .word-letter {
+    font-size: 3rem;
+    min-width: 2.5rem;
+  }
+
+  .keyboard-section {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .virtual-keyboard {
+    grid-template-columns: repeat(13, 1fr);
+    gap: var(--spacing-md);
+    max-width: 900px;
+  }
+
+  .keyboard-key {
+    min-height: 60px;
+    font-size: 1.2rem;
+  }
+
+  .controls-section {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+}
+
+/* ========================================
+   LANDSCAPE ORIENTATION ADJUSTMENTS
+   ======================================== */
+
+@media (orientation: landscape) and (max-height: 600px) {
+  .game-container {
+    padding: var(--spacing-sm);
+    gap: var(--spacing-md);
+  }
+
+  .game-header {
+    padding: var(--spacing-md) 0;
+    margin-bottom: var(--spacing-md);
+  }
+
+  .game-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .game-main {
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1fr auto;
+    gap: var(--spacing-md);
+  }
+
+  .hangman-section {
+    grid-column: 1;
+    grid-row: 1;
+    min-height: 200px;
+    padding: var(--spacing-md);
+  }
+
+  .hangman-figure {
+    width: 120px;
+    height: 150px;
+  }
+
+  .word-section {
+    grid-column: 2;
+    grid-row: 1;
+    padding: var(--spacing-md);
+  }
+
+  .word-display {
+    font-size: 1.5rem;
+    letter-spacing: 0.3rem;
+    min-height: 50px;
+  }
+
+  .word-letter {
+    font-size: 1.5rem;
+    min-width: 1.2rem;
+  }
+
+  .keyboard-section {
+    grid-column: 3;
+    grid-row: 1;
+    padding: var(--spacing-md);
+  }
+
+  .virtual-keyboard {
+    grid-template-columns: repeat(6, 1fr);
+    gap: var(--spacing-xs);
+  }
+
+  .keyboard-key {
+    padding: var(--spacing-xs);
+    font-size: 0.9rem;
+    min-height: 35px;
+  }
+
+  .controls-section {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    flex-direction: row;
+    padding: var(--spacing-md);
+  }
+
+  .btn {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: 0.9rem;
+    min-width: 80px;
+  }
+}
+
+/* ========================================
+   HIGH DPI DISPLAYS
+   ======================================== */
+
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .hangman-figure::before,
+  .hangman-figure::after,
+  .hangman-figure .beam,
+  .hangman-figure .rope,
+  .hangman-figure .body,
+  .hangman-figure .left-arm,
+  .hangman-figure .right-arm,
+  .hangman-figure .left-leg,
+  .hangman-figure .right-leg {
+    box-shadow: 0 0 1px rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* ========================================
+   REDUCED MOTION PREFERENCES
+   ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .word-letter.revealed {
+    animation: none;
+  }
+
+  .word-letter.incorrect {
+    animation: none;
+  }
+
+  .keyboard-key::before {
+    transition: none;
+  }
+
+  .progress-fill::after {
+    animation: none;
+  }
+}
+
+/* ========================================
+   DARK MODE SUPPORT
+   ======================================== */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --primary-color: #34495e;
+    --secondary-color: #5dade2;
+    --accent-color: #e67e22;
+    --success-color: #58d68d;
+    --background-color: #2c3e50;
+    --text-color: #ecf0f1;
+    --white: #34495e;
+    --light-gray: #7f8c8d;
+    --dark-gray: #bdc3c7;
+  }
+
+  .game-header {
+    background: linear-gradient(
+      135deg,
+      var(--primary-color),
+      var(--secondary-color)
+    );
+  }
+
+  .hangman-section,
+  .word-section,
+  .keyboard-section,
+  .controls-section {
+    background: var(--white);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .word-display {
+    background: var(--background-color);
+    border-color: var(--light-gray);
+  }
+
+  .incorrect-letters {
+    background: #4a1a1a;
+    border-color: var(--accent-color);
+  }
+
+  .modal-content {
+    background: var(--white);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* ========================================
+   PRINT STYLES
+   ======================================== */
+
+@media print {
+  .game-container {
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  .game-header {
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+  }
+
+  .hangman-section,
+  .word-section,
+  .keyboard-section,
+  .controls-section {
+    background: white !important;
+    box-shadow: none !important;
+    border: 1px solid black !important;
+  }
+
+  .btn,
+  .keyboard-key {
+    background: white !important;
+    color: black !important;
+    border: 1px solid black !important;
+    box-shadow: none !important;
+  }
+
+  .game-over-modal {
+    display: none !important;
+  }
+}
