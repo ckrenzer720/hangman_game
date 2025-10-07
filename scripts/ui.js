@@ -17,15 +17,24 @@ class GameUI {
     const keyboard = document.getElementById("keyboard");
     if (!keyboard) return;
 
-    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    // Define keyboard layout as shown in the image
+    const keyboardLayout = ["ABCDE", "FGHIJ", "KLMNO", "PQRST", "UVWXY", "Z"];
+
     keyboard.innerHTML = "";
 
-    alphabet.split("").forEach((letter) => {
-      const key = document.createElement("button");
-      key.className = "keyboard-key";
-      key.textContent = letter;
-      key.setAttribute("data-letter", letter.toLowerCase());
-      keyboard.appendChild(key);
+    keyboardLayout.forEach((row) => {
+      const rowElement = document.createElement("div");
+      rowElement.className = "keyboard-row";
+
+      row.split("").forEach((letter) => {
+        const key = document.createElement("button");
+        key.className = "keyboard-key";
+        key.textContent = letter;
+        key.setAttribute("data-letter", letter.toLowerCase());
+        rowElement.appendChild(key);
+      });
+
+      keyboard.appendChild(rowElement);
     });
   }
 

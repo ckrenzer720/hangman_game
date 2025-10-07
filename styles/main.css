@@ -6,10 +6,12 @@
 :root {
   /* Color Scheme */
   --primary-color: #2c3e50;
-  --secondary-color: #3498db;
+  --secondary-color: #4a90e2;
+  --secondary-hover: #357abd;
   --accent-color: #e74c3c;
   --success-color: #27ae60;
-  --background-color: #ecf0f1;
+  --background-color: #f0f8ff;
+  --grid-color: #e6f3ff;
   --text-color: #2c3e50;
   --white: #ffffff;
   --light-gray: #bdc3c7;
@@ -114,7 +116,7 @@ body {
 .game-main {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto auto auto;
+  grid-template-rows: auto auto;
   gap: var(--spacing-xl);
   align-items: start;
 }
@@ -122,7 +124,7 @@ body {
 /* Hangman Section */
 .hangman-section {
   grid-column: 1;
-  grid-row: 1 / 3;
+  grid-row: 1;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -165,28 +167,30 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--background-color);
+  background: var(--white);
   border-radius: var(--border-radius-md);
-  border: 3px solid var(--light-gray);
+  border: 3px solid var(--secondary-color);
+  box-shadow: var(--shadow-sm);
 }
 
 .incorrect-letters {
   text-align: center;
   font-size: 1.2rem;
-  color: var(--accent-color);
+  color: var(--white);
   font-weight: bold;
   min-height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #ffe6e6;
+  background: var(--accent-color);
   border-radius: var(--border-radius-md);
   border: 2px solid var(--accent-color);
+  box-shadow: var(--shadow-sm);
 }
 
 .incorrect-letters::before {
   content: "Wrong letters: ";
-  color: var(--text-color);
+  color: var(--white);
   font-weight: normal;
 }
 
@@ -201,18 +205,30 @@ body {
 }
 
 .virtual-keyboard {
-  display: grid;
-  grid-template-columns: repeat(13, 1fr);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: var(--spacing-sm);
-  max-width: 800px;
+  max-width: 600px;
   margin: 0 auto;
+}
+
+.keyboard-row {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+.keyboard-row:last-child {
+  margin-bottom: 0;
 }
 
 .keyboard-key {
   background: var(--secondary-color);
   color: var(--white);
-  border: none;
-  border-radius: var(--border-radius-sm);
+  border: 2px solid var(--white);
+  border-radius: 50%;
   padding: var(--spacing-md);
   font-size: 1.1rem;
   font-weight: bold;
@@ -220,13 +236,14 @@ body {
   transition: all var(--transition-fast);
   box-shadow: var(--shadow-sm);
   min-height: 50px;
+  min-width: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .keyboard-key:hover:not(:disabled) {
-  background: var(--primary-color);
+  background: var(--secondary-hover);
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }

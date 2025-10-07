@@ -392,7 +392,7 @@ hangman_game/
 
 ### Phase 2: Enhanced Features (Week 2)
 
-- [ ] Hangman figure drawing
+- [x] Hangman figure drawing
 - [ ] Virtual keyboard implementation
 - [ ] Game state management
 - [ ] Win/lose conditions
