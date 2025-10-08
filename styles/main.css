@@ -4,18 +4,18 @@
 
 /* CSS Custom Properties (Variables) */
 :root {
-  /* Color Scheme */
-  --primary-color: #2c3e50;
-  --secondary-color: #4a90e2;
-  --secondary-hover: #357abd;
-  --accent-color: #e74c3c;
-  --success-color: #27ae60;
-  --background-color: #f0f8ff;
-  --grid-color: #e6f3ff;
-  --text-color: #2c3e50;
+  /* Color Scheme - Modern High Contrast */
+  --primary-color: #1a1a1a;
+  --secondary-color: #6366f1;
+  --secondary-hover: #4f46e5;
+  --accent-color: #dc2626;
+  --success-color: #059669;
+  --background-color: #f8fafc;
+  --grid-color: #e2e8f0;
+  --text-color: #1a1a1a;
   --white: #ffffff;
-  --light-gray: #bdc3c7;
-  --dark-gray: #7f8c8d;
+  --light-gray: #94a3b8;
+  --dark-gray: #475569;
 
   /* Typography */
   --font-primary: "Arial", sans-serif;
