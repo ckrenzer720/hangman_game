@@ -527,23 +527,20 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --primary-color: #f1f5f9;
-    --secondary-color: #818cf8;
-    --accent-color: #f87171;
-    --success-color: #10b981;
-    --background-color: #0f172a;
-    --text-color: #f1f5f9;
-    --white: #1e293b;
-    --light-gray: #64748b;
-    --dark-gray: #cbd5e1;
+    --primary-color: #e5e7eb;
+    --secondary-color: #9ca3af;
+    --accent-color: #9ca3af;
+    --success-color: #9ca3af;
+    --background-color: #faf9f7;
+    --text-color: #2d2d2d;
+    --white: #faf9f7;
+    --light-gray: #d1d5db;
+    --dark-gray: #6b7280;
   }
 
   .game-header {
-    background: linear-gradient(
-      135deg,
-      var(--primary-color),
-      var(--secondary-color)
-    );
+    background: var(--white);
+    border: 1px solid var(--light-gray);
   }
 
   .hangman-section,
@@ -551,7 +548,7 @@
   .keyboard-section,
   .controls-section {
     background: var(--white);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--light-gray);
   }
 
   .word-display {
@@ -560,13 +557,13 @@
   }
 
   .incorrect-letters {
-    background: #7f1d1d;
-    border-color: var(--accent-color);
+    background: var(--white);
+    border-color: var(--light-gray);
   }
 
   .modal-content {
     background: var(--white);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--light-gray);
   }
 }
 

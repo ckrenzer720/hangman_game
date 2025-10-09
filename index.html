@@ -15,7 +15,13 @@
       </header>
 
       <main class="game-main">
-        <div class="hangman-section">
+        <!-- Loading indicator -->
+        <div id="loading-indicator" class="loading-section">
+          <div class="loading-spinner"></div>
+          <p>Loading words...</p>
+        </div>
+
+        <div class="hangman-section" id="hangman-section" style="display: none">
           <div class="hangman-figure" id="hangman">
             <!-- Gallows structure -->
             <div class="beam"></div>

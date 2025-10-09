@@ -120,9 +120,23 @@ class GameUI {
   makeGuess(letter) {
     const success = this.game.makeGuess(letter);
 
+    // Add immediate visual feedback to the keyboard key
+    const keyElement = document.querySelector(`[data-letter="${letter}"]`);
+    if (keyElement) {
+      if (success) {
+        keyElement.classList.add("correct");
+        this.addPulseAnimation(keyElement);
+      } else if (this.game.gameState.guessedLetters.includes(letter)) {
+        // Already guessed - no visual change needed
+      } else {
+        keyElement.classList.add("incorrect");
+        this.addShakeAnimation(keyElement);
+      }
+    }
+
     if (success) {
       this.showFeedback(
-        "correct",
+        "success",
         `Great! "${letter.toUpperCase()}" is in the word!`
       );
     } else if (this.game.gameState.guessedLetters.includes(letter)) {
@@ -145,13 +159,16 @@ class GameUI {
     this.game.hideGameOverModal();
     this.game.resetGame();
     this.updateGameStatus();
-    this.showFeedback("info", "New game started! Good luck!");
+    this.showFeedback("success", "New game started! Good luck!");
   }
 
   quitGame() {
     if (confirm("Are you sure you want to quit? Your progress will be lost.")) {
       this.game.gameState.gameStatus = "quit";
-      this.showFeedback("info", 'Game quit. Click "New Game" to start again.');
+      this.showFeedback(
+        "warning",
+        'Game quit. Click "New Game" to start again.'
+      );
     }
   }
 

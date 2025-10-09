@@ -16,109 +16,8 @@ class HangmanGame {
       category: "animals",
     };
 
-    this.wordLists = {
-      easy: {
-        animals: ["cat", "dog", "bird", "fish", "lion", "bear", "wolf", "deer"],
-        colors: [
-          "red",
-          "blue",
-          "green",
-          "yellow",
-          "black",
-          "white",
-          "pink",
-          "purple",
-        ],
-        food: [
-          "pizza",
-          "cake",
-          "soup",
-          "rice",
-          "meat",
-          "milk",
-          "bread",
-          "cheese",
-        ],
-      },
-      medium: {
-        animals: [
-          "elephant",
-          "giraffe",
-          "penguin",
-          "dolphin",
-          "tiger",
-          "eagle",
-          "shark",
-          "butterfly",
-        ],
-        countries: [
-          "france",
-          "germany",
-          "japan",
-          "brazil",
-          "canada",
-          "australia",
-          "italy",
-          "spain",
-        ],
-        food: [
-          "burger",
-          "pasta",
-          "salad",
-          "sushi",
-          "tacos",
-          "curry",
-          "pizza",
-          "sandwich",
-        ],
-        sports: [
-          "football",
-          "basketball",
-          "tennis",
-          "soccer",
-          "hockey",
-          "baseball",
-          "golf",
-          "swimming",
-        ],
-      },
-      hard: {
-        animals: [
-          "rhinoceros",
-          "hippopotamus",
-          "orangutan",
-          "chameleon",
-          "platypus",
-          "armadillo",
-          "mongoose",
-          "porcupine",
-        ],
-        science: [
-          "photosynthesis",
-          "metamorphosis",
-          "chromosome",
-          "molecule",
-          "ecosystem",
-          "laboratory",
-        ],
-        literature: [
-          "shakespeare",
-          "hemingway",
-          "dickens",
-          "tolkien",
-          "austen",
-          "twain",
-        ],
-        geography: [
-          "mountains",
-          "oceans",
-          "continents",
-          "hemisphere",
-          "equator",
-          "longitude",
-        ],
-      },
-    };
+    this.wordLists = {};
+    this.wordsLoaded = false;
 
     this.hangmanParts = [
       "beam",
@@ -131,7 +30,44 @@ class HangmanGame {
       "right-leg",
     ];
 
-    this.init();
+    this.loadWords();
+  }
+
+  async loadWords() {
+    try {
+      const response = await fetch("data/words.json");
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      this.wordLists = await response.json();
+      this.wordsLoaded = true;
+      console.log("Words loaded successfully:", this.wordLists);
+
+      // Initialize the game once words are loaded
+      this.init();
+    } catch (error) {
+      console.error("Error loading words:", error);
+      // Fallback to a minimal word list if JSON loading fails
+      this.wordLists = {
+        easy: {
+          animals: ["cat", "dog", "bird", "fish", "lion"],
+        },
+        medium: {
+          animals: ["elephant", "giraffe", "penguin", "dolphin", "tiger"],
+        },
+        hard: {
+          animals: [
+            "rhinoceros",
+            "hippopotamus",
+            "orangutan",
+            "chameleon",
+            "platypus",
+          ],
+        },
+      };
+      this.wordsLoaded = true;
+      this.init();
+    }
   }
 
   init() {
@@ -141,6 +77,16 @@ class HangmanGame {
   }
 
   selectRandomWord() {
+    // Check if words are loaded
+    if (
+      !this.wordsLoaded ||
+      !this.wordLists ||
+      Object.keys(this.wordLists).length === 0
+    ) {
+      console.warn("Words not loaded yet, skipping word selection");
+      return;
+    }
+
     const difficultyWords = this.wordLists[this.gameState.difficulty];
     if (!difficultyWords) {
       console.error(`Invalid difficulty: ${this.gameState.difficulty}`);
@@ -295,9 +241,13 @@ class HangmanGame {
     if (wordDisplay) {
       wordDisplay.innerHTML = this.gameState.hiddenWord
         .split("")
-        .map((char) => {
+        .map((char, index) => {
           if (char === " ") return " ";
-          return `<span class="word-letter">${char}</span>`;
+          const isRevealed = char !== "_";
+          const letterClass = isRevealed
+            ? "word-letter revealed"
+            : "word-letter";
+          return `<span class="${letterClass}">${char}</span>`;
         })
         .join("");
     }
