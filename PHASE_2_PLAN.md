@@ -303,6 +303,8 @@ Phase 2 focuses on enhancing the core hangman game with advanced features, impro
 
 ### User Experience Risks
 
+git config --global user.email "YOUR_EMAIL"
+
 - **Complexity**: Keep interface simple and intuitive
 - **Accessibility**: Test with screen readers and assistive technologies
 - **Performance**: Monitor and optimize loading times
