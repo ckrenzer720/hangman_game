@@ -51,6 +51,12 @@ class GameUI {
       hintBtn.addEventListener("click", () => this.game.getHint());
     }
 
+    // Pause/Resume Button
+    const pauseResumeBtn = document.getElementById("pause-resume");
+    if (pauseResumeBtn) {
+      pauseResumeBtn.addEventListener("click", () => this.togglePause());
+    }
+
     // Quit Button
     const quitBtn = document.getElementById("quit");
     if (quitBtn) {
@@ -61,6 +67,12 @@ class GameUI {
     const playAgainBtn = document.getElementById("play-again");
     if (playAgainBtn) {
       playAgainBtn.addEventListener("click", () => this.startNewGame());
+    }
+
+    // Resume Button (in pause overlay)
+    const resumeBtn = document.getElementById("resume-game");
+    if (resumeBtn) {
+      resumeBtn.addEventListener("click", () => this.resumeGame());
     }
 
     // Virtual Keyboard
@@ -95,9 +107,25 @@ class GameUI {
   }
 
   handleKeyPress(event) {
-    if (this.game.gameState.gameStatus !== "playing") return;
-
     const key = event.key.toLowerCase();
+
+    // Handle pause/resume with space key (works in any game state except won/lost)
+    if (
+      key === " " &&
+      this.game.gameState.gameStatus !== "won" &&
+      this.game.gameState.gameStatus !== "lost"
+    ) {
+      event.preventDefault();
+      this.togglePause();
+      return;
+    }
+
+    // Only handle other keys if game is playing and not paused
+    if (
+      this.game.gameState.gameStatus !== "playing" ||
+      this.game.gameState.isPaused
+    )
+      return;
 
     // Only handle letter keys
     if (key.length === 1 && key >= "a" && key <= "z") {
@@ -106,7 +134,7 @@ class GameUI {
     }
 
     // Handle special keys
-    if (key === "enter" || key === " ") {
+    if (key === "enter") {
       event.preventDefault();
       this.startNewGame();
     }
@@ -157,9 +185,96 @@ class GameUI {
 
   startNewGame() {
     this.game.hideGameOverModal();
+
+    // Hide pause overlay if it's showing
+    const pauseOverlay = document.getElementById("pause-overlay");
+    if (pauseOverlay) {
+      pauseOverlay.classList.remove("show");
+    }
+
+    // Reset pause button text
+    const pauseResumeBtn = document.getElementById("pause-resume");
+    if (pauseResumeBtn) {
+      pauseResumeBtn.textContent = "Pause";
+    }
+
     this.game.resetGame();
     this.updateGameStatus();
     this.showFeedback("success", "New game started! Good luck!");
+  }
+
+  togglePause() {
+    if (
+      this.game.gameState.gameStatus === "won" ||
+      this.game.gameState.gameStatus === "lost"
+    ) {
+      return; // Can't pause when game is over
+    }
+
+    const wasPaused = this.game.gameState.isPaused;
+    const success = this.game.togglePause();
+
+    if (success) {
+      if (wasPaused) {
+        this.resumeGame();
+      } else {
+        this.pauseGame();
+      }
+    }
+  }
+
+  pauseGame() {
+    const pauseOverlay = document.getElementById("pause-overlay");
+    const pauseResumeBtn = document.getElementById("pause-resume");
+
+    if (pauseOverlay) {
+      pauseOverlay.classList.add("show");
+    }
+
+    if (pauseResumeBtn) {
+      pauseResumeBtn.textContent = "Resume";
+    }
+
+    // Disable keyboard input
+    this.disableKeyboardInput();
+    this.updateGameStatus();
+    this.showFeedback(
+      "warning",
+      "Game paused. Press Space or click Resume to continue."
+    );
+  }
+
+  resumeGame() {
+    const pauseOverlay = document.getElementById("pause-overlay");
+    const pauseResumeBtn = document.getElementById("pause-resume");
+
+    if (pauseOverlay) {
+      pauseOverlay.classList.remove("show");
+    }
+
+    if (pauseResumeBtn) {
+      pauseResumeBtn.textContent = "Pause";
+    }
+
+    // Re-enable keyboard input
+    this.enableKeyboardInput();
+    this.updateGameStatus();
+    this.showFeedback("success", "Game resumed!");
+  }
+
+  disableKeyboardInput() {
+    const keyboardKeys = document.querySelectorAll(".keyboard-key");
+    keyboardKeys.forEach((key) => {
+      key.disabled = true;
+    });
+  }
+
+  enableKeyboardInput() {
+    const keyboardKeys = document.querySelectorAll(".keyboard-key");
+    keyboardKeys.forEach((key) => {
+      const letter = key.textContent.toLowerCase();
+      key.disabled = this.game.gameState.guessedLetters.includes(letter);
+    });
   }
 
   quitGame() {
@@ -174,28 +289,33 @@ class GameUI {
 
   updateGameStatus() {
     const status = this.game.gameState.gameStatus;
+    const isPaused = this.game.gameState.isPaused;
     const incorrectCount = this.game.gameState.incorrectGuesses.length;
     const maxIncorrect = this.game.gameState.maxIncorrectGuesses;
 
     // Update any status indicators if they exist
     const statusElement = document.getElementById("game-status");
     if (statusElement) {
-      switch (status) {
-        case "playing":
-          statusElement.textContent = `Guesses left: ${
-            maxIncorrect - incorrectCount
-          }`;
-          break;
-        case "won":
-          statusElement.textContent = "Congratulations! You won!";
-          break;
-        case "lost":
-          statusElement.textContent = "Game Over! Better luck next time.";
-          break;
-        case "quit":
-          statusElement.textContent =
-            "Game quit. Start a new game to continue.";
-          break;
+      if (isPaused) {
+        statusElement.textContent = "Game Paused - Press Space to resume";
+      } else {
+        switch (status) {
+          case "playing":
+            statusElement.textContent = `Guesses left: ${
+              maxIncorrect - incorrectCount
+            }`;
+            break;
+          case "won":
+            statusElement.textContent = "Congratulations! You won!";
+            break;
+          case "lost":
+            statusElement.textContent = "Game Over! Better luck next time.";
+            break;
+          case "quit":
+            statusElement.textContent =
+              "Game quit. Start a new game to continue.";
+            break;
+        }
       }
     }
   }

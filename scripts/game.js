@@ -10,7 +10,8 @@ class HangmanGame {
       guessedLetters: [],
       incorrectGuesses: [],
       maxIncorrectGuesses: 6,
-      gameStatus: "playing", // 'playing', 'won', 'lost'
+      gameStatus: "playing", // 'playing', 'won', 'lost', 'paused'
+      isPaused: false,
       score: 0,
       difficulty: "medium",
       category: "animals",
@@ -117,7 +118,8 @@ class HangmanGame {
   }
 
   makeGuess(letter) {
-    if (this.gameState.gameStatus !== "playing") return false;
+    if (this.gameState.gameStatus !== "playing" || this.gameState.isPaused)
+      return false;
 
     letter = letter.toLowerCase();
 
@@ -214,6 +216,7 @@ class HangmanGame {
       incorrectGuesses: [],
       maxIncorrectGuesses: 6,
       gameStatus: "playing",
+      isPaused: false,
       score: this.gameState.score, // Keep score
       difficulty: this.gameState.difficulty,
       category: this.gameState.category,
@@ -280,7 +283,8 @@ class HangmanGame {
   }
 
   getHint() {
-    if (this.gameState.gameStatus !== "playing") return;
+    if (this.gameState.gameStatus !== "playing" || this.gameState.isPaused)
+      return;
 
     const unrevealedLetters = this.gameState.currentWord
       .split("")
@@ -294,6 +298,32 @@ class HangmanGame {
       const randomLetter =
         unrevealedLetters[Math.floor(Math.random() * unrevealedLetters.length)];
       this.makeGuess(randomLetter);
+    }
+  }
+
+  pauseGame() {
+    if (this.gameState.gameStatus === "playing" && !this.gameState.isPaused) {
+      this.gameState.isPaused = true;
+      this.gameState.gameStatus = "paused";
+      return true;
+    }
+    return false;
+  }
+
+  resumeGame() {
+    if (this.gameState.gameStatus === "paused" && this.gameState.isPaused) {
+      this.gameState.isPaused = false;
+      this.gameState.gameStatus = "playing";
+      return true;
+    }
+    return false;
+  }
+
+  togglePause() {
+    if (this.gameState.isPaused) {
+      return this.resumeGame();
+    } else {
+      return this.pauseGame();
     }
   }
 }
