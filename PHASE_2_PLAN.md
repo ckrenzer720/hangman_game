@@ -30,7 +30,7 @@ Phase 2 focuses on enhancing the core hangman game with advanced features, impro
   - Save current game progress
   - Resume from exact state
 
-- [ ] **Game Statistics Tracking**
+- [x] **Game Statistics Tracking**
 
   - Track games played, won, lost
   - Calculate win percentage

@@ -15,7 +15,12 @@ class HangmanGame {
       score: 0,
       difficulty: "medium",
       category: "animals",
+      gameStartTime: null,
+      gameEndTime: null,
     };
+
+    // Statistics tracking
+    this.statistics = this.loadStatistics();
 
     this.wordLists = {};
     this.wordsLoaded = false;
@@ -75,6 +80,7 @@ class HangmanGame {
     this.selectRandomWord();
     this.createHiddenWord();
     this.updateDisplay();
+    this.startGameTimer();
   }
 
   selectRandomWord() {
@@ -174,6 +180,7 @@ class HangmanGame {
     if (hiddenLetters === currentLetters) {
       this.gameState.gameStatus = "won";
       this.gameState.score += 100;
+      this.updateStatistics("won");
       this.showGameOverModal("You Won!", this.gameState.currentWord);
     }
   }
@@ -184,6 +191,7 @@ class HangmanGame {
       this.gameState.maxIncorrectGuesses
     ) {
       this.gameState.gameStatus = "lost";
+      this.updateStatistics("lost");
       this.showGameOverModal("Game Over!", this.gameState.currentWord);
     }
   }
@@ -220,6 +228,8 @@ class HangmanGame {
       score: this.gameState.score, // Keep score
       difficulty: this.gameState.difficulty,
       category: this.gameState.category,
+      gameStartTime: null,
+      gameEndTime: null,
     };
 
     // Reset hangman figure
@@ -325,6 +335,172 @@ class HangmanGame {
     } else {
       return this.pauseGame();
     }
+  }
+
+  // ========================================
+  // STATISTICS MANAGEMENT
+  // ========================================
+
+  loadStatistics() {
+    try {
+      const savedStats = localStorage.getItem("hangmanStatistics");
+      if (savedStats) {
+        return JSON.parse(savedStats);
+      }
+    } catch (error) {
+      console.error("Error loading statistics:", error);
+    }
+
+    // Return default statistics structure
+    return {
+      gamesPlayed: 0,
+      gamesWon: 0,
+      gamesLost: 0,
+      winPercentage: 0,
+      totalGuesses: 0,
+      averageGuessesPerGame: 0,
+      fastestCompletionTime: null,
+      longestStreak: 0,
+      currentStreak: 0,
+      bestStreak: 0,
+      totalPlayTime: 0,
+      averagePlayTime: 0,
+      difficultyStats: {
+        easy: { played: 0, won: 0, lost: 0 },
+        medium: { played: 0, won: 0, lost: 0 },
+        hard: { played: 0, won: 0, lost: 0 },
+      },
+      categoryStats: {},
+      lastPlayed: null,
+    };
+  }
+
+  saveStatistics() {
+    try {
+      localStorage.setItem(
+        "hangmanStatistics",
+        JSON.stringify(this.statistics)
+      );
+    } catch (error) {
+      console.error("Error saving statistics:", error);
+    }
+  }
+
+  startGameTimer() {
+    this.gameState.gameStartTime = Date.now();
+  }
+
+  endGameTimer() {
+    this.gameState.gameEndTime = Date.now();
+    return this.gameState.gameEndTime - this.gameState.gameStartTime;
+  }
+
+  updateStatistics(gameResult) {
+    const playTime = this.endGameTimer();
+    const totalGuesses = this.gameState.guessedLetters.length;
+
+    // Update basic counts
+    this.statistics.gamesPlayed++;
+    if (gameResult === "won") {
+      this.statistics.gamesWon++;
+      this.statistics.currentStreak++;
+      this.statistics.bestStreak = Math.max(
+        this.statistics.bestStreak,
+        this.statistics.currentStreak
+      );
+    } else if (gameResult === "lost") {
+      this.statistics.gamesLost++;
+      this.statistics.currentStreak = 0;
+    }
+
+    // Update win percentage
+    this.statistics.winPercentage =
+      this.statistics.gamesPlayed > 0
+        ? Math.round(
+            (this.statistics.gamesWon / this.statistics.gamesPlayed) * 100
+          )
+        : 0;
+
+    // Update guess statistics
+    this.statistics.totalGuesses += totalGuesses;
+    this.statistics.averageGuessesPerGame =
+      this.statistics.gamesPlayed > 0
+        ? Math.round(this.statistics.totalGuesses / this.statistics.gamesPlayed)
+        : 0;
+
+    // Update time statistics
+    this.statistics.totalPlayTime += playTime;
+    this.statistics.averagePlayTime =
+      this.statistics.gamesPlayed > 0
+        ? Math.round(
+            this.statistics.totalPlayTime / this.statistics.gamesPlayed
+          )
+        : 0;
+
+    // Update fastest completion time (only for wins)
+    if (gameResult === "won") {
+      if (
+        !this.statistics.fastestCompletionTime ||
+        playTime < this.statistics.fastestCompletionTime
+      ) {
+        this.statistics.fastestCompletionTime = playTime;
+      }
+    }
+
+    // Update difficulty statistics
+    const difficulty = this.gameState.difficulty;
+    this.statistics.difficultyStats[difficulty].played++;
+    if (gameResult === "won") {
+      this.statistics.difficultyStats[difficulty].won++;
+    } else if (gameResult === "lost") {
+      this.statistics.difficultyStats[difficulty].lost++;
+    }
+
+    // Update category statistics
+    const category = this.gameState.category;
+    if (!this.statistics.categoryStats[category]) {
+      this.statistics.categoryStats[category] = { played: 0, won: 0, lost: 0 };
+    }
+    this.statistics.categoryStats[category].played++;
+    if (gameResult === "won") {
+      this.statistics.categoryStats[category].won++;
+    } else if (gameResult === "lost") {
+      this.statistics.categoryStats[category].lost++;
+    }
+
+    // Update last played
+    this.statistics.lastPlayed = new Date().toISOString();
+
+    // Save to localStorage
+    this.saveStatistics();
+  }
+
+  getStatistics() {
+    return { ...this.statistics };
+  }
+
+  resetStatistics() {
+    this.statistics = this.loadStatistics();
+    this.statistics.gamesPlayed = 0;
+    this.statistics.gamesWon = 0;
+    this.statistics.gamesLost = 0;
+    this.statistics.winPercentage = 0;
+    this.statistics.totalGuesses = 0;
+    this.statistics.averageGuessesPerGame = 0;
+    this.statistics.fastestCompletionTime = null;
+    this.statistics.longestStreak = 0;
+    this.statistics.currentStreak = 0;
+    this.statistics.bestStreak = 0;
+    this.statistics.totalPlayTime = 0;
+    this.statistics.averagePlayTime = 0;
+    this.statistics.difficultyStats = {
+      easy: { played: 0, won: 0, lost: 0 },
+      medium: { played: 0, won: 0, lost: 0 },
+      hard: { played: 0, won: 0, lost: 0 },
+    };
+    this.statistics.categoryStats = {};
+    this.statistics.lastPlayed = null;
+    this.saveStatistics();
   }
 }
 

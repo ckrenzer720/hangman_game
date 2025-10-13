@@ -75,6 +75,24 @@ class GameUI {
       resumeBtn.addEventListener("click", () => this.resumeGame());
     }
 
+    // Statistics Button
+    const statisticsBtn = document.getElementById("statistics");
+    if (statisticsBtn) {
+      statisticsBtn.addEventListener("click", () => this.showStatistics());
+    }
+
+    // Close Statistics Button
+    const closeStatsBtn = document.getElementById("close-statistics");
+    if (closeStatsBtn) {
+      closeStatsBtn.addEventListener("click", () => this.hideStatistics());
+    }
+
+    // Reset Statistics Button
+    const resetStatsBtn = document.getElementById("reset-statistics");
+    if (resetStatsBtn) {
+      resetStatsBtn.addEventListener("click", () => this.resetStatistics());
+    }
+
     // Virtual Keyboard
     const keyboard = document.getElementById("keyboard");
     if (keyboard) {
@@ -94,6 +112,16 @@ class GameUI {
       modal.addEventListener("click", (e) => {
         if (e.target === modal) {
           this.game.hideGameOverModal();
+        }
+      });
+    }
+
+    // Statistics modal close on background click
+    const statsModal = document.getElementById("statistics-modal");
+    if (statsModal) {
+      statsModal.addEventListener("click", (e) => {
+        if (e.target === statsModal) {
+          this.hideStatistics();
         }
       });
     }
@@ -355,6 +383,157 @@ class GameUI {
       setTimeout(() => {
         element.classList.remove("shake");
       }, 500);
+    }
+  }
+
+  // ========================================
+  // STATISTICS MANAGEMENT
+  // ========================================
+
+  showStatistics() {
+    const modal = document.getElementById("statistics-modal");
+    if (modal) {
+      this.populateStatistics();
+      modal.classList.add("show");
+    }
+  }
+
+  hideStatistics() {
+    const modal = document.getElementById("statistics-modal");
+    if (modal) {
+      modal.classList.remove("show");
+    }
+  }
+
+  populateStatistics() {
+    const content = document.getElementById("statistics-content");
+    if (!content) return;
+
+    const stats = this.game.getStatistics();
+
+    content.innerHTML = `
+      <div class="stat-group">
+        <h3>Games Played</h3>
+        <div class="stat-value">${stats.gamesPlayed}</div>
+        <div class="stat-label">Total Games</div>
+      </div>
+      
+      <div class="stat-group">
+        <h3>Win Rate</h3>
+        <div class="stat-value">${stats.winPercentage}%</div>
+        <div class="stat-label">${stats.gamesWon} wins / ${
+      stats.gamesLost
+    } losses</div>
+      </div>
+      
+      <div class="stat-group">
+        <h3>Current Streak</h3>
+        <div class="stat-value">${stats.currentStreak}</div>
+        <div class="stat-label">Consecutive Wins</div>
+      </div>
+      
+      <div class="stat-group">
+        <h3>Best Streak</h3>
+        <div class="stat-value">${stats.bestStreak}</div>
+        <div class="stat-label">Longest Streak</div>
+      </div>
+      
+      <div class="stat-group">
+        <h3>Average Guesses</h3>
+        <div class="stat-value">${stats.averageGuessesPerGame}</div>
+        <div class="stat-label">Per Game</div>
+      </div>
+      
+      <div class="stat-group">
+        <h3>Fastest Time</h3>
+        <div class="stat-value time-display">${this.formatTime(
+          stats.fastestCompletionTime
+        )}</div>
+        <div class="stat-label">Best Completion</div>
+      </div>
+      
+      <div class="stat-group">
+        <h3>Average Time</h3>
+        <div class="stat-value time-display">${this.formatTime(
+          stats.averagePlayTime
+        )}</div>
+        <div class="stat-label">Per Game</div>
+      </div>
+      
+      <div class="stat-group">
+        <h3>Total Time</h3>
+        <div class="stat-value time-display">${this.formatTime(
+          stats.totalPlayTime
+        )}</div>
+        <div class="stat-label">All Games</div>
+      </div>
+      
+      <div class="statistics-grid">
+        <div class="difficulty-stats">
+          <h4>Difficulty Breakdown</h4>
+          ${Object.entries(stats.difficultyStats)
+            .map(
+              ([difficulty, data]) => `
+            <div class="difficulty-item">
+              <span class="difficulty-name">${difficulty}</span>
+              <span class="stat-value">${data.played} games</span>
+            </div>
+          `
+            )
+            .join("")}
+        </div>
+        
+        <div class="category-stats">
+          <h4>Category Breakdown</h4>
+          ${Object.entries(stats.categoryStats)
+            .slice(0, 5)
+            .map(
+              ([category, data]) => `
+            <div class="category-item">
+              <span class="category-name">${category}</span>
+              <span class="stat-value">${data.played} games</span>
+            </div>
+          `
+            )
+            .join("")}
+          ${
+            Object.keys(stats.categoryStats).length > 5
+              ? `<div class="category-item">
+              <span class="category-name">+${
+                Object.keys(stats.categoryStats).length - 5
+              } more</span>
+              <span class="stat-value"></span>
+            </div>`
+              : ""
+          }
+        </div>
+      </div>
+    `;
+  }
+
+  formatTime(milliseconds) {
+    if (!milliseconds || milliseconds === 0) return "--:--";
+
+    const seconds = Math.floor(milliseconds / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+
+    if (minutes > 0) {
+      return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+    } else {
+      return `${remainingSeconds}s`;
+    }
+  }
+
+  resetStatistics() {
+    if (
+      confirm(
+        "Are you sure you want to reset all statistics? This action cannot be undone."
+      )
+    ) {
+      this.game.resetStatistics();
+      this.populateStatistics();
+      this.showFeedback("success", "Statistics have been reset!");
     }
   }
 }
