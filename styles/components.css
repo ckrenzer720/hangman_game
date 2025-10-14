@@ -760,3 +760,204 @@
 .pulse {
   animation: pulse 0.3s ease-in-out;
 }
+
+/* ========================================
+   ACHIEVEMENTS MODAL
+   ======================================== */
+
+.achievements-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--transition-normal);
+}
+
+.achievements-modal.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.achievements-modal .modal-content {
+  background: var(--white);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-xl);
+  max-width: 800px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+}
+
+.achievements-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-lg);
+  margin-top: var(--spacing-lg);
+}
+
+.achievement-item {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-lg);
+  border: 2px solid var(--light-gray);
+  border-radius: var(--border-radius-md);
+  background: var(--white);
+  transition: all var(--transition-normal);
+}
+
+.achievement-item.unlocked {
+  border-color: var(--success-color);
+  background: linear-gradient(135deg, #f8f9fa, #e8f5e8);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.1);
+}
+
+.achievement-item.locked {
+  opacity: 0.6;
+  background: var(--light-gray);
+}
+
+.achievement-icon {
+  font-size: 2.5rem;
+  margin-right: var(--spacing-lg);
+  min-width: 60px;
+  text-align: center;
+}
+
+.achievement-info {
+  flex: 1;
+}
+
+.achievement-info h4 {
+  margin: 0 0 var(--spacing-sm) 0;
+  color: var(--dark-gray);
+  font-size: 1.1rem;
+}
+
+.achievement-info p {
+  margin: 0 0 var(--spacing-md) 0;
+  color: var(--medium-gray);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.achievement-unlocked {
+  color: var(--success-color);
+  font-weight: bold;
+  font-size: 0.85rem;
+}
+
+.achievement-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.progress-bar {
+  flex: 1;
+  height: 8px;
+  background: var(--light-gray);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--primary-color),
+    var(--secondary-color)
+  );
+  border-radius: 4px;
+  transition: width var(--transition-normal);
+}
+
+.progress-text {
+  font-size: 0.85rem;
+  color: var(--medium-gray);
+  font-weight: bold;
+  min-width: 35px;
+  text-align: right;
+}
+
+/* ========================================
+   ACHIEVEMENT ANIMATIONS
+   ======================================== */
+
+@keyframes achievementPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(255, 215, 0, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 215, 0, 0);
+  }
+}
+
+/* ========================================
+   DIFFICULTY PROGRESSION DISPLAY
+   ======================================== */
+
+.difficulty-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--light-gray);
+  border-radius: var(--border-radius-md);
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: var(--dark-gray);
+}
+
+.difficulty-indicator.easy {
+  background: #d4edda;
+  color: #155724;
+}
+
+.difficulty-indicator.medium {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.difficulty-indicator.hard {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.streak-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: linear-gradient(45deg, #ff6b6b, #ffa500);
+  color: white;
+  border-radius: var(--border-radius-md);
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.score-display {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: linear-gradient(45deg, #4ecdc4, #44a08d);
+  color: white;
+  border-radius: var(--border-radius-md);
+  font-size: 0.9rem;
+  font-weight: bold;
+}

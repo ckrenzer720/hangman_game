@@ -93,6 +93,20 @@ class GameUI {
       resetStatsBtn.addEventListener("click", () => this.resetStatistics());
     }
 
+    // Achievements Button
+    const achievementsBtn = document.getElementById("achievements");
+    if (achievementsBtn) {
+      achievementsBtn.addEventListener("click", () => this.showAchievements());
+    }
+
+    // Close Achievements Button
+    const closeAchievementsBtn = document.getElementById("close-achievements");
+    if (closeAchievementsBtn) {
+      closeAchievementsBtn.addEventListener("click", () =>
+        this.hideAchievements()
+      );
+    }
+
     // Virtual Keyboard
     const keyboard = document.getElementById("keyboard");
     if (keyboard) {
@@ -361,10 +375,20 @@ class GameUI {
     feedbackElement.textContent = message;
     feedbackElement.className = `toast ${type} show`;
 
-    // Auto-hide after 3 seconds
+    // Special styling for achievements
+    if (type === "achievement") {
+      feedbackElement.style.background =
+        "linear-gradient(45deg, #ffd700, #ffed4e)";
+      feedbackElement.style.color = "#000";
+      feedbackElement.style.fontWeight = "bold";
+      feedbackElement.style.animation = "achievementPulse 0.6s ease-in-out";
+    }
+
+    // Auto-hide after 3 seconds (5 seconds for achievements)
+    const hideDelay = type === "achievement" ? 5000 : 3000;
     setTimeout(() => {
       feedbackElement.classList.remove("show");
-    }, 3000);
+    }, hideDelay);
   }
 
   // Animation helpers
@@ -468,6 +492,26 @@ class GameUI {
         <div class="stat-label">All Games</div>
       </div>
       
+      <div class="stat-group">
+        <h3>Current Score</h3>
+        <div class="stat-value">${this.game.gameState.score}</div>
+        <div class="stat-label">Total Points</div>
+      </div>
+      
+      <div class="stat-group">
+        <h3>Difficulty Level</h3>
+        <div class="stat-value">${this.game.gameState.difficulty.toUpperCase()}</div>
+        <div class="stat-label">Current Difficulty</div>
+      </div>
+      
+      <div class="stat-group">
+        <h3>Consecutive Wins</h3>
+        <div class="stat-value">${
+          this.game.difficultyProgression.consecutiveWins
+        }</div>
+        <div class="stat-label">In Current Streak</div>
+      </div>
+      
       <div class="statistics-grid">
         <div class="difficulty-stats">
           <h4>Difficulty Breakdown</h4>
@@ -532,9 +576,157 @@ class GameUI {
       )
     ) {
       this.game.resetStatistics();
+      this.game.resetAchievements();
       this.populateStatistics();
       this.showFeedback("success", "Statistics have been reset!");
     }
+  }
+
+  // ========================================
+  // ACHIEVEMENTS MANAGEMENT
+  // ========================================
+
+  showAchievements() {
+    const modal = document.getElementById("achievements-modal");
+    if (modal) {
+      this.populateAchievements();
+      modal.classList.add("show");
+    }
+  }
+
+  hideAchievements() {
+    const modal = document.getElementById("achievements-modal");
+    if (modal) {
+      modal.classList.remove("show");
+    }
+  }
+
+  populateAchievements() {
+    const content = document.getElementById("achievements-content");
+    if (!content) return;
+
+    const achievements = this.game.getAchievements();
+    const stats = this.game.getStatistics();
+
+    const achievementData = [
+      {
+        id: "firstWin",
+        name: "First Win",
+        description: "Win your first game",
+        icon: "🎯",
+        unlocked: achievements.firstWin.unlocked,
+        unlockedAt: achievements.firstWin.unlockedAt,
+        progress: stats.gamesWon >= 1 ? 100 : 0,
+      },
+      {
+        id: "streak5",
+        name: "5-Game Streak",
+        description: "Win 5 games in a row",
+        icon: "🔥",
+        unlocked: achievements.streak5.unlocked,
+        unlockedAt: achievements.streak5.unlockedAt,
+        progress: Math.min(100, (stats.currentStreak / 5) * 100),
+      },
+      {
+        id: "streak10",
+        name: "10-Game Streak",
+        description: "Win 10 games in a row",
+        icon: "💪",
+        unlocked: achievements.streak10.unlocked,
+        unlockedAt: achievements.streak10.unlockedAt,
+        progress: Math.min(100, (stats.currentStreak / 10) * 100),
+      },
+      {
+        id: "perfectGame",
+        name: "Perfect Game",
+        description: "Win a game with no incorrect guesses",
+        icon: "⭐",
+        unlocked: achievements.perfectGame.unlocked,
+        unlockedAt: achievements.perfectGame.unlockedAt,
+        progress: achievements.perfectGame.unlocked ? 100 : 0,
+      },
+      {
+        id: "speedDemon",
+        name: "Speed Demon",
+        description: "Win a game in under 15 seconds",
+        icon: "⚡",
+        unlocked: achievements.speedDemon.unlocked,
+        unlockedAt: achievements.speedDemon.unlockedAt,
+        progress: achievements.speedDemon.unlocked ? 100 : 0,
+      },
+      {
+        id: "difficultyMaster",
+        name: "Difficulty Master",
+        description: "Win a game on hard difficulty",
+        icon: "👑",
+        unlocked: achievements.difficultyMaster.unlocked,
+        unlockedAt: achievements.difficultyMaster.unlockedAt,
+        progress: achievements.difficultyMaster.unlocked ? 100 : 0,
+      },
+      {
+        id: "categoryExplorer",
+        name: "Category Explorer",
+        description: "Play 5 different categories",
+        icon: "🗺️",
+        unlocked: achievements.categoryExplorer.unlocked,
+        unlockedAt: achievements.categoryExplorer.unlockedAt,
+        progress: Math.min(
+          100,
+          (Object.keys(stats.categoryStats).length / 5) * 100
+        ),
+      },
+      {
+        id: "scoreHunter",
+        name: "Score Hunter",
+        description: "Reach 1000 total score",
+        icon: "💰",
+        unlocked: achievements.scoreHunter.unlocked,
+        unlockedAt: achievements.scoreHunter.unlockedAt,
+        progress: Math.min(100, (this.game.gameState.score / 1000) * 100),
+      },
+    ];
+
+    content.innerHTML = `
+      <div class="achievements-grid">
+        ${achievementData
+          .map(
+            (achievement) => `
+          <div class="achievement-item ${
+            achievement.unlocked ? "unlocked" : "locked"
+          }">
+            <div class="achievement-icon">${achievement.icon}</div>
+            <div class="achievement-info">
+              <h4>${achievement.name}</h4>
+              <p>${achievement.description}</p>
+              ${
+                achievement.unlocked
+                  ? `<div class="achievement-unlocked">Unlocked ${this.formatDate(
+                      achievement.unlockedAt
+                    )}</div>`
+                  : `<div class="achievement-progress">
+                  <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${
+                      achievement.progress
+                    }%"></div>
+                  </div>
+                  <span class="progress-text">${Math.round(
+                    achievement.progress
+                  )}%</span>
+                </div>`
+              }
+            </div>
+          </div>
+        `
+          )
+          .join("")}
+      </div>
+    `;
+  }
+
+  formatDate(dateString) {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
   }
 }
 

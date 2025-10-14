@@ -22,6 +22,21 @@ class HangmanGame {
     // Statistics tracking
     this.statistics = this.loadStatistics();
 
+    // Difficulty progression system
+    this.difficultyProgression = {
+      enabled: true,
+      consecutiveWins: 0,
+      difficultyThresholds: {
+        easy: 0, // Start at easy
+        medium: 3, // Advance to medium after 3 consecutive wins
+        hard: 7, // Advance to hard after 7 consecutive wins
+      },
+      difficultyOrder: ["easy", "medium", "hard"],
+    };
+
+    // Achievement system
+    this.achievements = this.loadAchievements();
+
     this.wordLists = {};
     this.wordsLoaded = false;
 
@@ -179,7 +194,17 @@ class HangmanGame {
 
     if (hiddenLetters === currentLetters) {
       this.gameState.gameStatus = "won";
-      this.gameState.score += 100;
+
+      // Calculate score based on difficulty and performance
+      const baseScore = this.calculateScore();
+      this.gameState.score += baseScore;
+
+      // Update difficulty progression
+      this.updateDifficultyProgression();
+
+      // Check for achievements
+      this.checkAchievements();
+
       this.updateStatistics("won");
       this.showGameOverModal("You Won!", this.gameState.currentWord);
     }
@@ -338,6 +363,224 @@ class HangmanGame {
   }
 
   // ========================================
+  // DIFFICULTY PROGRESSION SYSTEM
+  // ========================================
+
+  updateDifficultyProgression() {
+    if (!this.difficultyProgression.enabled) return;
+
+    this.difficultyProgression.consecutiveWins++;
+    const currentDifficulty = this.gameState.difficulty;
+    const currentIndex =
+      this.difficultyProgression.difficultyOrder.indexOf(currentDifficulty);
+
+    // Check if we should advance to next difficulty
+    const nextDifficulty =
+      this.difficultyProgression.difficultyOrder[currentIndex + 1];
+    if (
+      nextDifficulty &&
+      this.difficultyProgression.consecutiveWins >=
+        this.difficultyProgression.difficultyThresholds[nextDifficulty]
+    ) {
+      this.gameState.difficulty = nextDifficulty;
+      this.showDifficultyAdvancement(nextDifficulty);
+    }
+  }
+
+  showDifficultyAdvancement(newDifficulty) {
+    const difficultyNames = {
+      easy: "Easy",
+      medium: "Medium",
+      hard: "Hard",
+    };
+
+    // This will be handled by the UI
+    if (window.ui) {
+      window.ui.showFeedback(
+        "success",
+        `🎉 Difficulty Advanced to ${difficultyNames[newDifficulty]}! You've won ${this.difficultyProgression.consecutiveWins} games in a row!`
+      );
+    }
+  }
+
+  resetDifficultyProgression() {
+    this.difficultyProgression.consecutiveWins = 0;
+    this.gameState.difficulty = "easy";
+  }
+
+  // ========================================
+  // SCORING SYSTEM
+  // ========================================
+
+  calculateScore() {
+    const difficultyMultipliers = {
+      easy: 1,
+      medium: 2,
+      hard: 3,
+    };
+
+    const baseScore = 100;
+    const difficultyMultiplier =
+      difficultyMultipliers[this.gameState.difficulty] || 1;
+
+    // Bonus for fewer incorrect guesses
+    const incorrectGuesses = this.gameState.incorrectGuesses.length;
+    const maxGuesses = this.gameState.maxIncorrectGuesses;
+    const efficiencyBonus = Math.max(0, (maxGuesses - incorrectGuesses) * 10);
+
+    // Time bonus (faster completion = more points)
+    const playTime = this.endGameTimer();
+    const timeBonus = Math.max(0, Math.floor((30000 - playTime) / 1000) * 2); // 2 points per second under 30 seconds
+
+    const totalScore =
+      (baseScore + efficiencyBonus + timeBonus) * difficultyMultiplier;
+    return Math.max(50, totalScore); // Minimum score of 50
+  }
+
+  // ========================================
+  // ACHIEVEMENT SYSTEM
+  // ========================================
+
+  loadAchievements() {
+    try {
+      const savedAchievements = localStorage.getItem("hangmanAchievements");
+      if (savedAchievements) {
+        return JSON.parse(savedAchievements);
+      }
+    } catch (error) {
+      console.error("Error loading achievements:", error);
+    }
+
+    // Return default achievements structure
+    return {
+      firstWin: { unlocked: false, unlockedAt: null },
+      streak5: { unlocked: false, unlockedAt: null },
+      streak10: { unlocked: false, unlockedAt: null },
+      perfectGame: { unlocked: false, unlockedAt: null },
+      speedDemon: { unlocked: false, unlockedAt: null },
+      difficultyMaster: { unlocked: false, unlockedAt: null },
+      categoryExplorer: { unlocked: false, unlockedAt: null },
+      scoreHunter: { unlocked: false, unlockedAt: null },
+    };
+  }
+
+  saveAchievements() {
+    try {
+      localStorage.setItem(
+        "hangmanAchievements",
+        JSON.stringify(this.achievements)
+      );
+    } catch (error) {
+      console.error("Error saving achievements:", error);
+    }
+  }
+
+  checkAchievements() {
+    const stats = this.statistics;
+    const newAchievements = [];
+
+    // First Win
+    if (!this.achievements.firstWin.unlocked && stats.gamesWon >= 1) {
+      this.achievements.firstWin.unlocked = true;
+      this.achievements.firstWin.unlockedAt = new Date().toISOString();
+      newAchievements.push("First Win");
+    }
+
+    // Streak Achievements
+    if (!this.achievements.streak5.unlocked && stats.currentStreak >= 5) {
+      this.achievements.streak5.unlocked = true;
+      this.achievements.streak5.unlockedAt = new Date().toISOString();
+      newAchievements.push("5-Game Streak");
+    }
+
+    if (!this.achievements.streak10.unlocked && stats.currentStreak >= 10) {
+      this.achievements.streak10.unlocked = true;
+      this.achievements.streak10.unlockedAt = new Date().toISOString();
+      newAchievements.push("10-Game Streak");
+    }
+
+    // Perfect Game (no incorrect guesses)
+    if (
+      !this.achievements.perfectGame.unlocked &&
+      this.gameState.incorrectGuesses.length === 0
+    ) {
+      this.achievements.perfectGame.unlocked = true;
+      this.achievements.perfectGame.unlockedAt = new Date().toISOString();
+      newAchievements.push("Perfect Game");
+    }
+
+    // Speed Demon (win in under 15 seconds)
+    const playTime = this.endGameTimer();
+    if (!this.achievements.speedDemon.unlocked && playTime < 15000) {
+      this.achievements.speedDemon.unlocked = true;
+      this.achievements.speedDemon.unlockedAt = new Date().toISOString();
+      newAchievements.push("Speed Demon");
+    }
+
+    // Difficulty Master (win on hard difficulty)
+    if (
+      !this.achievements.difficultyMaster.unlocked &&
+      this.gameState.difficulty === "hard"
+    ) {
+      this.achievements.difficultyMaster.unlocked = true;
+      this.achievements.difficultyMaster.unlockedAt = new Date().toISOString();
+      newAchievements.push("Difficulty Master");
+    }
+
+    // Category Explorer (play 5 different categories)
+    const categoriesPlayed = Object.keys(stats.categoryStats).length;
+    if (!this.achievements.categoryExplorer.unlocked && categoriesPlayed >= 5) {
+      this.achievements.categoryExplorer.unlocked = true;
+      this.achievements.categoryExplorer.unlockedAt = new Date().toISOString();
+      newAchievements.push("Category Explorer");
+    }
+
+    // Score Hunter (reach 1000 total score)
+    if (
+      !this.achievements.scoreHunter.unlocked &&
+      this.gameState.score >= 1000
+    ) {
+      this.achievements.scoreHunter.unlocked = true;
+      this.achievements.scoreHunter.unlockedAt = new Date().toISOString();
+      newAchievements.push("Score Hunter");
+    }
+
+    // Save achievements and show notifications
+    if (newAchievements.length > 0) {
+      this.saveAchievements();
+      this.showAchievementNotification(newAchievements);
+    }
+  }
+
+  showAchievementNotification(achievements) {
+    if (window.ui) {
+      achievements.forEach((achievement) => {
+        window.ui.showFeedback(
+          "achievement",
+          `🏆 Achievement Unlocked: ${achievement}!`
+        );
+      });
+    }
+  }
+
+  getAchievements() {
+    return { ...this.achievements };
+  }
+
+  resetAchievements() {
+    this.achievements = this.loadAchievements();
+    this.achievements.firstWin.unlocked = false;
+    this.achievements.streak5.unlocked = false;
+    this.achievements.streak10.unlocked = false;
+    this.achievements.perfectGame.unlocked = false;
+    this.achievements.speedDemon.unlocked = false;
+    this.achievements.difficultyMaster.unlocked = false;
+    this.achievements.categoryExplorer.unlocked = false;
+    this.achievements.scoreHunter.unlocked = false;
+    this.saveAchievements();
+  }
+
+  // ========================================
   // STATISTICS MANAGEMENT
   // ========================================
 
@@ -411,6 +654,8 @@ class HangmanGame {
     } else if (gameResult === "lost") {
       this.statistics.gamesLost++;
       this.statistics.currentStreak = 0;
+      // Reset difficulty progression on loss
+      this.difficultyProgression.consecutiveWins = 0;
     }
 
     // Update win percentage
