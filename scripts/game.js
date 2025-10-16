@@ -19,6 +19,9 @@ class HangmanGame {
       gameEndTime: null,
     };
 
+    // Initialize error middleware (will be set by main.js)
+    this.errorMiddleware = null;
+
     // Statistics tracking
     this.statistics = this.loadStatistics();
 
@@ -39,6 +42,9 @@ class HangmanGame {
 
     this.wordLists = {};
     this.wordsLoaded = false;
+    this.isOfflineMode = false;
+    this.retryCount = 0;
+    this.maxRetries = 3;
 
     this.hangmanParts = [
       "beam",
@@ -56,38 +62,209 @@ class HangmanGame {
 
   async loadWords() {
     try {
-      const response = await fetch("data/words.json");
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      // Check if we're offline first
+      if (NetworkUtils.isOffline()) {
+        throw new Error("Network connection lost");
       }
+
+      // Try to load from cache first
+      const cachedWords = this.loadCachedWords();
+      if (cachedWords && !this.isOfflineMode) {
+        this.wordLists = cachedWords;
+        this.wordsLoaded = true;
+        console.log("Words loaded from cache:", this.wordLists);
+        this.init();
+        return;
+      }
+
+      // Try to fetch from server with timeout and retry logic
+      const response = await NetworkUtils.retryWithBackoff(
+        async () => {
+          return await NetworkUtils.fetchWithTimeout(
+            "data/words.json",
+            {},
+            10000
+          );
+        },
+        this.maxRetries,
+        1000
+      );
+
       this.wordLists = await response.json();
       this.wordsLoaded = true;
-      console.log("Words loaded successfully:", this.wordLists);
+      this.isOfflineMode = false;
+      this.retryCount = 0;
+
+      // Cache the words for offline use
+      this.cacheWords(this.wordLists);
+
+      console.log("Words loaded successfully from server:", this.wordLists);
 
       // Initialize the game once words are loaded
       this.init();
     } catch (error) {
       console.error("Error loading words:", error);
-      // Fallback to a minimal word list if JSON loading fails
-      this.wordLists = {
-        easy: {
-          animals: ["cat", "dog", "bird", "fish", "lion"],
-        },
-        medium: {
-          animals: ["elephant", "giraffe", "penguin", "dolphin", "tiger"],
-        },
-        hard: {
-          animals: [
-            "rhinoceros",
-            "hippopotamus",
-            "orangutan",
-            "chameleon",
-            "platypus",
-          ],
-        },
-      };
-      this.wordsLoaded = true;
-      this.init();
+
+      // Handle the error with recovery strategies
+      const recoveryResult = this.errorMiddleware
+        ? this.errorMiddleware.handleError(error, "network_fetch", {
+            retryCount: this.retryCount,
+            isOffline: NetworkUtils.isOffline(),
+          })
+        : { success: false, message: "No error middleware available" };
+
+      if (recoveryResult.success) {
+        switch (recoveryResult.action) {
+          case "retry":
+            this.retryCount++;
+            if (this.retryCount <= this.maxRetries) {
+              console.log(
+                `Retrying word loading (attempt ${this.retryCount})...`
+              );
+              setTimeout(() => this.loadWords(), 1000 * this.retryCount);
+              return;
+            }
+            break;
+          case "use_cached":
+            this.wordLists = recoveryResult.data;
+            this.wordsLoaded = true;
+            this.init();
+            this.showUserMessage(
+              "info",
+              "Using cached word list. Some features may be limited."
+            );
+            return;
+          case "offline_mode":
+            this.isOfflineMode = true;
+            break;
+          case "use_fallback":
+            this.wordLists = recoveryResult.data;
+            this.wordsLoaded = true;
+            this.init();
+            this.showUserMessage(
+              "warning",
+              "Using fallback word list. Please check your internet connection."
+            );
+            return;
+        }
+      }
+
+      // If all recovery strategies fail, use fallback data
+      this.useFallbackWordList();
+    }
+  }
+
+  /**
+   * Loads cached words from localStorage
+   * @returns {Object|null} - Cached word list or null
+   */
+  loadCachedWords() {
+    if (!GameUtils.isLocalStorageAvailable()) return null;
+
+    try {
+      const cached = localStorage.getItem("hangman_cached_words");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        // Check if cache is not too old (24 hours)
+        const cacheTime = localStorage.getItem("hangman_words_cache_time");
+        if (
+          cacheTime &&
+          Date.now() - parseInt(cacheTime) < 24 * 60 * 60 * 1000
+        ) {
+          return parsed;
+        }
+      }
+    } catch (error) {
+      console.warn("Error loading cached words:", error);
+    }
+    return null;
+  }
+
+  /**
+   * Caches words to localStorage
+   * @param {Object} words - Word list to cache
+   */
+  cacheWords(words) {
+    if (!GameUtils.isLocalStorageAvailable()) return;
+
+    try {
+      localStorage.setItem("hangman_cached_words", JSON.stringify(words));
+      localStorage.setItem("hangman_words_cache_time", Date.now().toString());
+    } catch (error) {
+      console.warn("Error caching words:", error);
+    }
+  }
+
+  /**
+   * Uses fallback word list when all else fails
+   */
+  useFallbackWordList() {
+    this.wordLists = this.errorMiddleware
+      ? this.errorMiddleware.getFallbackWordList()
+      : this.getDefaultFallbackWords();
+    this.wordsLoaded = true;
+    this.isOfflineMode = true;
+    this.init();
+
+    const userMessage = NetworkUtils.isOffline()
+      ? "You're offline. Using limited word list. Connect to internet for full features."
+      : "Unable to load word list. Using fallback data. Please refresh the page.";
+
+    this.showUserMessage("warning", userMessage);
+  }
+
+  /**
+   * Get default fallback words if middleware is not available
+   */
+  getDefaultFallbackWords() {
+    return {
+      easy: {
+        animals: ["cat", "dog", "bird", "fish", "lion"],
+        colors: ["red", "blue", "green", "yellow", "black"],
+        food: ["pizza", "cake", "soup", "rice", "meat"],
+      },
+      medium: {
+        animals: ["elephant", "giraffe", "penguin", "dolphin", "tiger"],
+        countries: ["france", "germany", "japan", "brazil", "canada"],
+        food: ["burger", "pasta", "salad", "sushi", "tacos"],
+      },
+      hard: {
+        animals: [
+          "rhinoceros",
+          "hippopotamus",
+          "orangutan",
+          "chameleon",
+          "platypus",
+        ],
+        science: [
+          "photosynthesis",
+          "metamorphosis",
+          "chromosome",
+          "molecule",
+          "ecosystem",
+        ],
+        literature: [
+          "shakespeare",
+          "hemingway",
+          "dickens",
+          "tolkien",
+          "austen",
+        ],
+      },
+    };
+  }
+
+  /**
+   * Shows user-friendly error messages
+   * @param {string} type - Message type (error, warning, info, success)
+   * @param {string} message - Message to show
+   */
+  showUserMessage(type, message) {
+    if (window.ui) {
+      window.ui.showFeedback(type, message);
+    } else {
+      // Fallback if UI is not available
+      console.log(`${type.toUpperCase()}: ${message}`);
     }
   }
 
@@ -454,16 +631,59 @@ class HangmanGame {
   // ========================================
 
   loadAchievements() {
-    try {
-      const savedAchievements = localStorage.getItem("hangmanAchievements");
-      if (savedAchievements) {
-        return JSON.parse(savedAchievements);
-      }
-    } catch (error) {
-      console.error("Error loading achievements:", error);
-    }
+    return GameUtils.safeExecute(
+      () => {
+        if (!GameUtils.isLocalStorageAvailable()) {
+          throw new Error("localStorage not available");
+        }
 
-    // Return default achievements structure
+        const savedAchievements = localStorage.getItem("hangmanAchievements");
+        if (savedAchievements) {
+          const parsed = JSON.parse(savedAchievements);
+          // Validate the structure
+          if (this.validateAchievementsStructure(parsed)) {
+            return parsed;
+          } else {
+            throw new Error("Invalid achievements structure");
+          }
+        }
+        throw new Error("No saved achievements found");
+      },
+      "loadAchievements",
+      this.getDefaultAchievements()
+    );
+  }
+
+  /**
+   * Validates achievements structure
+   * @param {Object} achievements - Achievements object to validate
+   * @returns {boolean} - True if valid
+   */
+  validateAchievementsStructure(achievements) {
+    const requiredAchievements = [
+      "firstWin",
+      "streak5",
+      "streak10",
+      "perfectGame",
+      "speedDemon",
+      "difficultyMaster",
+      "categoryExplorer",
+      "scoreHunter",
+    ];
+
+    return requiredAchievements.every(
+      (achievement) =>
+        achievements.hasOwnProperty(achievement) &&
+        achievements[achievement].hasOwnProperty("unlocked") &&
+        achievements[achievement].hasOwnProperty("unlockedAt")
+    );
+  }
+
+  /**
+   * Gets default achievements structure
+   * @returns {Object} - Default achievements
+   */
+  getDefaultAchievements() {
     return {
       firstWin: { unlocked: false, unlockedAt: null },
       streak5: { unlocked: false, unlockedAt: null },
@@ -477,13 +697,27 @@ class HangmanGame {
   }
 
   saveAchievements() {
-    try {
-      localStorage.setItem(
-        "hangmanAchievements",
-        JSON.stringify(this.achievements)
+    const success = GameUtils.safeExecute(
+      () => {
+        if (!GameUtils.isLocalStorageAvailable()) {
+          throw new Error("localStorage not available");
+        }
+        localStorage.setItem(
+          "hangmanAchievements",
+          JSON.stringify(this.achievements)
+        );
+        return true;
+      },
+      "saveAchievements",
+      false
+    );
+
+    if (!success) {
+      this.errorHandler.handleError(
+        new Error("Failed to save achievements"),
+        "storage_quota",
+        { achievements: this.achievements }
       );
-    } catch (error) {
-      console.error("Error saving achievements:", error);
     }
   }
 
@@ -597,16 +831,61 @@ class HangmanGame {
   // ========================================
 
   loadStatistics() {
-    try {
-      const savedStats = localStorage.getItem("hangmanStatistics");
-      if (savedStats) {
-        return JSON.parse(savedStats);
-      }
-    } catch (error) {
-      console.error("Error loading statistics:", error);
-    }
+    return GameUtils.safeExecute(
+      () => {
+        if (!GameUtils.isLocalStorageAvailable()) {
+          throw new Error("localStorage not available");
+        }
 
-    // Return default statistics structure
+        const savedStats = localStorage.getItem("hangmanStatistics");
+        if (savedStats) {
+          const parsed = JSON.parse(savedStats);
+          // Validate the structure
+          if (this.validateStatisticsStructure(parsed)) {
+            return parsed;
+          } else {
+            throw new Error("Invalid statistics structure");
+          }
+        }
+        throw new Error("No saved statistics found");
+      },
+      "loadStatistics",
+      this.getDefaultStatistics()
+    );
+  }
+
+  /**
+   * Validates statistics structure
+   * @param {Object} stats - Statistics object to validate
+   * @returns {boolean} - True if valid
+   */
+  validateStatisticsStructure(stats) {
+    const requiredFields = [
+      "gamesPlayed",
+      "gamesWon",
+      "gamesLost",
+      "winPercentage",
+      "totalGuesses",
+      "averageGuessesPerGame",
+      "fastestCompletionTime",
+      "longestStreak",
+      "currentStreak",
+      "bestStreak",
+      "totalPlayTime",
+      "averagePlayTime",
+      "difficultyStats",
+      "categoryStats",
+      "lastPlayed",
+    ];
+
+    return requiredFields.every((field) => stats.hasOwnProperty(field));
+  }
+
+  /**
+   * Gets default statistics structure
+   * @returns {Object} - Default statistics
+   */
+  getDefaultStatistics() {
     return {
       gamesPlayed: 0,
       gamesWon: 0,
@@ -631,13 +910,27 @@ class HangmanGame {
   }
 
   saveStatistics() {
-    try {
-      localStorage.setItem(
-        "hangmanStatistics",
-        JSON.stringify(this.statistics)
+    const success = GameUtils.safeExecute(
+      () => {
+        if (!GameUtils.isLocalStorageAvailable()) {
+          throw new Error("localStorage not available");
+        }
+        localStorage.setItem(
+          "hangmanStatistics",
+          JSON.stringify(this.statistics)
+        );
+        return true;
+      },
+      "saveStatistics",
+      false
+    );
+
+    if (!success) {
+      this.errorHandler.handleError(
+        new Error("Failed to save statistics"),
+        "storage_quota",
+        { statistics: this.statistics }
       );
-    } catch (error) {
-      console.error("Error saving statistics:", error);
     }
   }
 

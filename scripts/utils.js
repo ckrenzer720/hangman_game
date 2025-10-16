@@ -455,7 +455,600 @@ class GameUtils {
       });
     }
   }
+
+  // ========================================
+  // ERROR HANDLING UTILITIES
+  // ========================================
+
+  /**
+   * Creates a user-friendly error message based on error type
+   * @param {Error} error - The error object
+   * @param {string} context - Context where the error occurred
+   * @returns {string} - User-friendly error message
+   */
+  static createUserFriendlyErrorMessage(error, context = "game") {
+    const errorMessages = {
+      network: {
+        fetch:
+          "Unable to load game data. Please check your internet connection and try again.",
+        timeout: "The request is taking too long. Please try again.",
+        offline:
+          "You appear to be offline. Please check your internet connection.",
+        server:
+          "The game server is temporarily unavailable. Please try again later.",
+        cors: "Unable to load game data due to security restrictions. Please try refreshing the page.",
+      },
+      storage: {
+        quota:
+          "Unable to save game data. Your browser storage is full. Please clear some space and try again.",
+        disabled:
+          "Unable to save game data. Please enable local storage in your browser settings.",
+        corrupted:
+          "Game data appears to be corrupted. Your progress will be reset.",
+        access:
+          "Unable to access saved game data. Please check your browser permissions.",
+      },
+      data: {
+        invalid: "Game data is invalid or corrupted. Please refresh the page.",
+        missing: "Required game data is missing. Please refresh the page.",
+        format: "Game data format is not supported. Please refresh the page.",
+        corrupted:
+          "Game data appears to be corrupted. Please refresh the page.",
+      },
+      game: {
+        initialization: "Unable to start the game. Please refresh the page.",
+        state: "Game state error occurred. Please start a new game.",
+        validation: "Invalid game data detected. Please refresh the page.",
+        memory: "Game memory error occurred. Please refresh the page.",
+      },
+    };
+
+    // Determine error type
+    let errorType = "game";
+    let errorSubtype = "initialization";
+
+    if (error.name === "TypeError" && error.message.includes("fetch")) {
+      errorType = "network";
+      errorSubtype = "fetch";
+    } else if (error.name === "AbortError") {
+      errorType = "network";
+      errorSubtype = "timeout";
+    } else if (error.name === "QuotaExceededError") {
+      errorType = "storage";
+      errorSubtype = "quota";
+    } else if (error.name === "SecurityError") {
+      errorType = "storage";
+      errorSubtype = "access";
+    } else if (error.message.includes("JSON")) {
+      errorType = "data";
+      errorSubtype = "format";
+    } else if (
+      error.message.includes("network") ||
+      error.message.includes("fetch")
+    ) {
+      errorType = "network";
+      errorSubtype = "fetch";
+    }
+
+    return (
+      errorMessages[errorType]?.[errorSubtype] ||
+      errorMessages.game.initialization
+    );
+  }
+
+  /**
+   * Determines if the user is offline
+   * @returns {boolean} - True if offline
+   */
+  static isOffline() {
+    return !navigator.onLine;
+  }
+
+  /**
+   * Checks if localStorage is available and working
+   * @returns {boolean} - True if localStorage is available
+   */
+  static isLocalStorageAvailable() {
+    try {
+      const testKey = "__localStorage_test__";
+      localStorage.setItem(testKey, "test");
+      localStorage.removeItem(testKey);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Safely executes a function with error handling
+   * @param {Function} fn - Function to execute
+   * @param {string} context - Context for error reporting
+   * @param {*} fallbackValue - Value to return if function fails
+   * @returns {*} - Function result or fallback value
+   */
+  static safeExecute(fn, context = "unknown", fallbackValue = null) {
+    try {
+      return fn();
+    } catch (error) {
+      console.error(`Error in ${context}:`, error);
+      return fallbackValue;
+    }
+  }
+
+  /**
+   * Retries a function with exponential backoff
+   * @param {Function} fn - Function to retry
+   * @param {number} maxRetries - Maximum number of retries
+   * @param {number} baseDelay - Base delay in milliseconds
+   * @returns {Promise} - Promise that resolves with function result
+   */
+  static async retryWithBackoff(fn, maxRetries = 3, baseDelay = 1000) {
+    let lastError;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await fn();
+      } catch (error) {
+        lastError = error;
+
+        if (attempt === maxRetries) {
+          throw error;
+        }
+
+        const delay = baseDelay * Math.pow(2, attempt);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+
+    throw lastError;
+  }
+
+  /**
+   * Creates a timeout promise
+   * @param {number} ms - Timeout in milliseconds
+   * @returns {Promise} - Promise that rejects after timeout
+   */
+  static createTimeout(ms) {
+    return new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("Operation timed out")), ms);
+    });
+  }
+
+  /**
+   * Fetches data with timeout and retry logic
+   * @param {string} url - URL to fetch
+   * @param {Object} options - Fetch options
+   * @param {number} timeout - Timeout in milliseconds
+   * @returns {Promise} - Promise that resolves with data
+   */
+  static async fetchWithTimeout(url, options = {}, timeout = 10000) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return response;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      throw error;
+    }
+  }
+}
+
+// ========================================
+// ERROR HANDLING CLASS
+// ========================================
+
+class ErrorHandler {
+  constructor() {
+    this.errorLog = [];
+    this.maxLogSize = 50;
+    this.recoveryStrategies = new Map();
+    this.setupGlobalErrorHandlers();
+  }
+
+  /**
+   * Sets up global error handlers
+   */
+  setupGlobalErrorHandlers() {
+    // Handle unhandled promise rejections
+    window.addEventListener("unhandledrejection", (event) => {
+      this.handleError(event.reason, "unhandled_promise_rejection");
+    });
+
+    // Handle global errors
+    window.addEventListener("error", (event) => {
+      this.handleError(event.error, "global_error");
+    });
+
+    // Handle offline/online events
+    window.addEventListener("offline", () => {
+      this.handleError(new Error("Network connection lost"), "network_offline");
+    });
+
+    window.addEventListener("online", () => {
+      this.handleError(
+        new Error("Network connection restored"),
+        "network_online"
+      );
+    });
+  }
+
+  /**
+   * Handles errors with logging and recovery
+   * @param {Error} error - The error to handle
+   * @param {string} context - Context where error occurred
+   * @param {Object} options - Additional options
+   */
+  handleError(error, context = "unknown", options = {}) {
+    const errorInfo = {
+      message: error.message,
+      stack: error.stack,
+      context,
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      url: window.location.href,
+      ...options,
+    };
+
+    // Add to error log
+    this.logError(errorInfo);
+
+    // Try to recover
+    const recoveryResult = this.attemptRecovery(error, context, options);
+
+    if (recoveryResult.success) {
+      console.log("Error recovered:", recoveryResult.message);
+    } else {
+      console.error("Error could not be recovered:", error);
+    }
+
+    return recoveryResult;
+  }
+
+  /**
+   * Logs error information
+   * @param {Object} errorInfo - Error information to log
+   */
+  logError(errorInfo) {
+    this.errorLog.push(errorInfo);
+
+    // Keep log size manageable
+    if (this.errorLog.length > this.maxLogSize) {
+      this.errorLog = this.errorLog.slice(-this.maxLogSize);
+    }
+
+    // Store in localStorage if available
+    if (GameUtils.isLocalStorageAvailable()) {
+      try {
+        localStorage.setItem(
+          "hangman_error_log",
+          JSON.stringify(this.errorLog)
+        );
+      } catch (error) {
+        console.warn("Could not save error log to localStorage:", error);
+      }
+    }
+  }
+
+  /**
+   * Attempts to recover from an error
+   * @param {Error} error - The error to recover from
+   * @param {string} context - Context where error occurred
+   * @param {Object} options - Additional options
+   * @returns {Object} - Recovery result
+   */
+  attemptRecovery(error, context, options = {}) {
+    const recoveryStrategies = this.getRecoveryStrategies(context);
+
+    for (const strategy of recoveryStrategies) {
+      try {
+        const result = strategy(error, options);
+        if (result.success) {
+          return result;
+        }
+      } catch (recoveryError) {
+        console.warn("Recovery strategy failed:", recoveryError);
+      }
+    }
+
+    return {
+      success: false,
+      message: "No recovery strategy available",
+    };
+  }
+
+  /**
+   * Gets recovery strategies for a given context
+   * @param {string} context - Error context
+   * @returns {Array} - Array of recovery strategies
+   */
+  getRecoveryStrategies(context) {
+    const strategies = {
+      network_fetch: [
+        this.retryWithFallback.bind(this),
+        this.useCachedData.bind(this),
+        this.useOfflineMode.bind(this),
+      ],
+      storage_quota: [
+        this.clearOldData.bind(this),
+        this.useMemoryStorage.bind(this),
+      ],
+      data_corrupted: [
+        this.resetToDefaults.bind(this),
+        this.useFallbackData.bind(this),
+      ],
+      game_initialization: [
+        this.retryInitialization.bind(this),
+        this.useMinimalMode.bind(this),
+      ],
+    };
+
+    return strategies[context] || [];
+  }
+
+  /**
+   * Recovery strategy: Retry with fallback
+   */
+  retryWithFallback(error, options) {
+    if (options.retryCount < 3) {
+      return {
+        success: true,
+        message: "Retrying operation",
+        action: "retry",
+      };
+    }
+    return { success: false };
+  }
+
+  /**
+   * Recovery strategy: Use cached data
+   */
+  useCachedData(error, options) {
+    if (GameUtils.isLocalStorageAvailable()) {
+      const cachedData = localStorage.getItem("hangman_cached_words");
+      if (cachedData) {
+        return {
+          success: true,
+          message: "Using cached data",
+          action: "use_cached",
+          data: JSON.parse(cachedData),
+        };
+      }
+    }
+    return { success: false };
+  }
+
+  /**
+   * Recovery strategy: Use offline mode
+   */
+  useOfflineMode(error, options) {
+    return {
+      success: true,
+      message: "Switching to offline mode",
+      action: "offline_mode",
+    };
+  }
+
+  /**
+   * Recovery strategy: Clear old data
+   */
+  clearOldData(error, options) {
+    if (GameUtils.isLocalStorageAvailable()) {
+      try {
+        // Clear old error logs
+        localStorage.removeItem("hangman_error_log");
+        // Clear old statistics (keep recent ones)
+        const stats = localStorage.getItem("hangmanStatistics");
+        if (stats) {
+          const parsedStats = JSON.parse(stats);
+          // Reset some fields to free up space
+          parsedStats.totalPlayTime = 0;
+          parsedStats.averagePlayTime = 0;
+          localStorage.setItem(
+            "hangmanStatistics",
+            JSON.stringify(parsedStats)
+          );
+        }
+        return {
+          success: true,
+          message: "Cleared old data to free up space",
+          action: "clear_data",
+        };
+      } catch (error) {
+        return { success: false };
+      }
+    }
+    return { success: false };
+  }
+
+  /**
+   * Recovery strategy: Use memory storage
+   */
+  useMemoryStorage(error, options) {
+    return {
+      success: true,
+      message: "Switching to memory storage",
+      action: "memory_storage",
+    };
+  }
+
+  /**
+   * Recovery strategy: Reset to defaults
+   */
+  resetToDefaults(error, options) {
+    return {
+      success: true,
+      message: "Resetting to default settings",
+      action: "reset_defaults",
+    };
+  }
+
+  /**
+   * Recovery strategy: Use fallback data
+   */
+  useFallbackData(error, options) {
+    return {
+      success: true,
+      message: "Using fallback data",
+      action: "use_fallback",
+      data: this.getFallbackWordList(),
+    };
+  }
+
+  /**
+   * Recovery strategy: Retry initialization
+   */
+  retryInitialization(error, options) {
+    return {
+      success: true,
+      message: "Retrying initialization",
+      action: "retry_init",
+    };
+  }
+
+  /**
+   * Recovery strategy: Use minimal mode
+   */
+  useMinimalMode(error, options) {
+    return {
+      success: true,
+      message: "Switching to minimal mode",
+      action: "minimal_mode",
+    };
+  }
+
+  /**
+   * Gets fallback word list for offline mode
+   * @returns {Object} - Fallback word list
+   */
+  getFallbackWordList() {
+    return {
+      easy: {
+        animals: ["cat", "dog", "bird", "fish", "lion", "bear", "wolf", "deer"],
+        colors: [
+          "red",
+          "blue",
+          "green",
+          "yellow",
+          "black",
+          "white",
+          "pink",
+          "purple",
+        ],
+        food: [
+          "pizza",
+          "cake",
+          "soup",
+          "rice",
+          "meat",
+          "milk",
+          "bread",
+          "cheese",
+        ],
+      },
+      medium: {
+        animals: [
+          "elephant",
+          "giraffe",
+          "penguin",
+          "dolphin",
+          "tiger",
+          "eagle",
+          "shark",
+          "butterfly",
+        ],
+        countries: [
+          "france",
+          "germany",
+          "japan",
+          "brazil",
+          "canada",
+          "australia",
+          "italy",
+          "spain",
+        ],
+        food: [
+          "burger",
+          "pasta",
+          "salad",
+          "sushi",
+          "tacos",
+          "curry",
+          "pizza",
+          "sandwich",
+        ],
+      },
+      hard: {
+        animals: [
+          "rhinoceros",
+          "hippopotamus",
+          "orangutan",
+          "chameleon",
+          "platypus",
+          "armadillo",
+        ],
+        science: [
+          "photosynthesis",
+          "metamorphosis",
+          "chromosome",
+          "molecule",
+          "ecosystem",
+          "laboratory",
+        ],
+        literature: [
+          "shakespeare",
+          "hemingway",
+          "dickens",
+          "tolkien",
+          "austen",
+          "twain",
+        ],
+      },
+    };
+  }
+
+  /**
+   * Gets error statistics
+   * @returns {Object} - Error statistics
+   */
+  getErrorStatistics() {
+    const errorCounts = {};
+    const contextCounts = {};
+
+    this.errorLog.forEach((error) => {
+      errorCounts[error.message] = (errorCounts[error.message] || 0) + 1;
+      contextCounts[error.context] = (contextCounts[error.context] || 0) + 1;
+    });
+
+    return {
+      totalErrors: this.errorLog.length,
+      errorCounts,
+      contextCounts,
+      recentErrors: this.errorLog.slice(-10),
+    };
+  }
+
+  /**
+   * Clears error log
+   */
+  clearErrorLog() {
+    this.errorLog = [];
+    if (GameUtils.isLocalStorageAvailable()) {
+      localStorage.removeItem("hangman_error_log");
+    }
+  }
 }
 
 // Export for use in other files
 window.GameUtils = GameUtils;
+window.ErrorHandler = ErrorHandler;

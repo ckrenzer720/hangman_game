@@ -380,32 +380,90 @@ class GameUI {
   }
 
   showFeedback(type, message) {
-    // Create or update feedback element
-    let feedbackElement = document.getElementById("game-feedback");
-    if (!feedbackElement) {
-      feedbackElement = document.createElement("div");
-      feedbackElement.id = "game-feedback";
-      feedbackElement.className = "toast";
-      document.body.appendChild(feedbackElement);
+    try {
+      // Create or update feedback element
+      let feedbackElement = document.getElementById("game-feedback");
+      if (!feedbackElement) {
+        feedbackElement = document.createElement("div");
+        feedbackElement.id = "game-feedback";
+        feedbackElement.className = "toast";
+        document.body.appendChild(feedbackElement);
+      }
+
+      feedbackElement.textContent = message;
+      feedbackElement.className = `toast ${type} show`;
+
+      // Special styling for different message types
+      this.applyFeedbackStyling(feedbackElement, type);
+
+      // Auto-hide after appropriate delay
+      const hideDelay = this.getFeedbackHideDelay(type);
+      setTimeout(() => {
+        if (feedbackElement && feedbackElement.classList) {
+          feedbackElement.classList.remove("show");
+        }
+      }, hideDelay);
+    } catch (error) {
+      // Fallback to console if DOM manipulation fails
+      console.log(`${type.toUpperCase()}: ${message}`);
     }
+  }
 
-    feedbackElement.textContent = message;
-    feedbackElement.className = `toast ${type} show`;
+  /**
+   * Applies styling based on feedback type
+   * @param {HTMLElement} element - Feedback element
+   * @param {string} type - Feedback type
+   */
+  applyFeedbackStyling(element, type) {
+    const styles = {
+      achievement: {
+        background: "linear-gradient(45deg, #ffd700, #ffed4e)",
+        color: "#000",
+        fontWeight: "bold",
+        animation: "achievementPulse 0.6s ease-in-out",
+      },
+      error: {
+        background: "linear-gradient(45deg, #ff6b6b, #ff8e8e)",
+        color: "#fff",
+        fontWeight: "bold",
+      },
+      warning: {
+        background: "linear-gradient(45deg, #ffa726, #ffb74d)",
+        color: "#fff",
+        fontWeight: "bold",
+      },
+      info: {
+        background: "linear-gradient(45deg, #42a5f5, #64b5f6)",
+        color: "#fff",
+        fontWeight: "bold",
+      },
+      success: {
+        background: "linear-gradient(45deg, #66bb6a, #81c784)",
+        color: "#fff",
+        fontWeight: "bold",
+      },
+    };
 
-    // Special styling for achievements
-    if (type === "achievement") {
-      feedbackElement.style.background =
-        "linear-gradient(45deg, #ffd700, #ffed4e)";
-      feedbackElement.style.color = "#000";
-      feedbackElement.style.fontWeight = "bold";
-      feedbackElement.style.animation = "achievementPulse 0.6s ease-in-out";
+    const style = styles[type];
+    if (style) {
+      Object.assign(element.style, style);
     }
+  }
 
-    // Auto-hide after 3 seconds (5 seconds for achievements)
-    const hideDelay = type === "achievement" ? 5000 : 3000;
-    setTimeout(() => {
-      feedbackElement.classList.remove("show");
-    }, hideDelay);
+  /**
+   * Gets hide delay based on feedback type
+   * @param {string} type - Feedback type
+   * @returns {number} - Hide delay in milliseconds
+   */
+  getFeedbackHideDelay(type) {
+    const delays = {
+      achievement: 5000,
+      error: 4000,
+      warning: 3500,
+      info: 3000,
+      success: 3000,
+    };
+    return delays[type] || 3000;
   }
 
   // Animation helpers
@@ -450,8 +508,21 @@ class GameUI {
     const content = document.getElementById("statistics-content");
     if (!content) return;
 
-    const stats = this.game.getStatistics();
+    try {
+      const stats = this.game.getStatistics();
+      this.renderStatisticsContent(content, stats);
+    } catch (error) {
+      console.error("Error loading statistics:", error);
+      this.renderStatisticsError(content, error);
+    }
+  }
 
+  /**
+   * Renders statistics content
+   * @param {HTMLElement} content - Content container
+   * @param {Object} stats - Statistics data
+   */
+  renderStatisticsContent(content, stats) {
     content.innerHTML = `
       <div class="stat-group">
         <h3>Games Played</h3>
@@ -572,6 +643,35 @@ class GameUI {
     `;
   }
 
+  /**
+   * Renders statistics error message
+   * @param {HTMLElement} content - Content container
+   * @param {Error} error - Error that occurred
+   */
+  renderStatisticsError(content, error) {
+    const userMessage = ErrorMessageFactory.createUserFriendlyMessage(
+      error,
+      "data_corrupted"
+    );
+
+    content.innerHTML = `
+      <div style="text-align: center; padding: 40px; color: #666;">
+        <div style="font-size: 48px; margin-bottom: 20px;">📊</div>
+        <h3 style="color: #ff6b6b; margin-bottom: 15px;">Unable to Load Statistics</h3>
+        <p style="margin-bottom: 20px;">${userMessage}</p>
+        <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <p style="margin: 0; font-size: 14px; color: #999;">
+            Your statistics may have been corrupted or are temporarily unavailable.
+          </p>
+        </div>
+        <button onclick="location.reload()" 
+                style="padding: 10px 20px; background: #0066cc; color: white; border: none; border-radius: 5px; cursor: pointer;">
+          Refresh Page
+        </button>
+      </div>
+    `;
+  }
+
   formatTime(milliseconds) {
     if (!milliseconds || milliseconds === 0) return "--:--";
 
@@ -622,9 +722,23 @@ class GameUI {
     const content = document.getElementById("achievements-content");
     if (!content) return;
 
-    const achievements = this.game.getAchievements();
-    const stats = this.game.getStatistics();
+    try {
+      const achievements = this.game.getAchievements();
+      const stats = this.game.getStatistics();
+      this.renderAchievementsContent(content, achievements, stats);
+    } catch (error) {
+      console.error("Error loading achievements:", error);
+      this.renderAchievementsError(content, error);
+    }
+  }
 
+  /**
+   * Renders achievements content
+   * @param {HTMLElement} content - Content container
+   * @param {Object} achievements - Achievements data
+   * @param {Object} stats - Statistics data
+   */
+  renderAchievementsContent(content, achievements, stats) {
     const achievementData = [
       {
         id: "firstWin",
@@ -736,6 +850,35 @@ class GameUI {
         `
           )
           .join("")}
+      </div>
+    `;
+  }
+
+  /**
+   * Renders achievements error message
+   * @param {HTMLElement} content - Content container
+   * @param {Error} error - Error that occurred
+   */
+  renderAchievementsError(content, error) {
+    const userMessage = ErrorMessageFactory.createUserFriendlyMessage(
+      error,
+      "data_corrupted"
+    );
+
+    content.innerHTML = `
+      <div style="text-align: center; padding: 40px; color: #666;">
+        <div style="font-size: 48px; margin-bottom: 20px;">🏆</div>
+        <h3 style="color: #ff6b6b; margin-bottom: 15px;">Unable to Load Achievements</h3>
+        <p style="margin-bottom: 20px;">${userMessage}</p>
+        <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <p style="margin: 0; font-size: 14px; color: #999;">
+            Your achievements may have been corrupted or are temporarily unavailable.
+          </p>
+        </div>
+        <button onclick="location.reload()" 
+                style="padding: 10px 20px; background: #0066cc; color: white; border: none; border-radius: 5px; cursor: pointer;">
+          Refresh Page
+        </button>
       </div>
     `;
   }
