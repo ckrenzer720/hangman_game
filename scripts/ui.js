@@ -145,11 +145,20 @@ class GameUI {
     if (keyElement.disabled) return;
 
     const letter = keyElement.getAttribute("data-letter");
-    this.makeGuess(letter);
+
+    // Use enhanced input validation even for virtual keyboard clicks
+    const validation = GameUtils.validateHangmanInput(letter);
+
+    if (validation.isValid) {
+      this.makeGuess(validation.sanitizedInput);
+    } else {
+      // This shouldn't happen with virtual keyboard, but handle gracefully
+      this.showFeedback("error", "Invalid input detected");
+    }
   }
 
   handleKeyPress(event) {
-    const key = event.key.toLowerCase();
+    const key = event.key;
 
     // Handle pause/resume with space key (works in any game state except won/lost)
     if (
@@ -169,19 +178,27 @@ class GameUI {
     )
       return;
 
-    // Only handle letter keys
-    if (key.length === 1 && key >= "a" && key <= "z") {
-      event.preventDefault();
-      this.makeGuess(key);
+    // Use enhanced input validation for letter keys
+    if (key.length === 1) {
+      const validation = GameUtils.validateHangmanInput(key);
+
+      if (validation.isValid) {
+        event.preventDefault();
+        this.makeGuess(validation.sanitizedInput);
+      } else {
+        // Show error feedback for invalid input
+        this.showFeedback("error", validation.errorMessage);
+        event.preventDefault();
+      }
     }
 
     // Handle special keys
-    if (key === "enter") {
+    if (key === "Enter") {
       event.preventDefault();
       this.startNewGame();
     }
 
-    if (key === "h") {
+    if (key.toLowerCase() === "h") {
       event.preventDefault();
       this.game.getHint();
     }

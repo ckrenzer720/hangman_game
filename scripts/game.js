@@ -142,7 +142,19 @@ class HangmanGame {
     if (this.gameState.gameStatus !== "playing" || this.gameState.isPaused)
       return false;
 
-    letter = letter.toLowerCase();
+    // Use enhanced input validation
+    const validation = GameUtils.validateHangmanInput(letter);
+
+    if (!validation.isValid) {
+      // Show error message to user
+      if (window.ui) {
+        window.ui.showFeedback("error", validation.errorMessage);
+      }
+      return false;
+    }
+
+    // Use the sanitized input
+    letter = validation.sanitizedInput;
 
     // Check if letter was already guessed
     if (this.gameState.guessedLetters.includes(letter)) {

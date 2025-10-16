@@ -103,6 +103,192 @@ class GameUtils {
     return input.toString().trim().toLowerCase();
   }
 
+  // ========================================
+  // ENHANCED INPUT VALIDATION SYSTEM
+  // ========================================
+
+  /**
+   * Validates if input is a valid letter for hangman game
+   * Supports English letters and common accented characters
+   * @param {string} input - The input to validate
+   * @returns {boolean} - True if valid letter
+   */
+  static isValidLetter(input) {
+    if (!input || typeof input !== "string") return false;
+
+    // Normalize the input first
+    const normalized = this.normalizeLetter(input);
+
+    // Check if it's a single character and a valid letter
+    return normalized.length === 1 && /^[a-z]$/.test(normalized);
+  }
+
+  /**
+   * Normalizes input to handle case-insensitive input and special characters
+   * @param {string} input - The input to normalize
+   * @returns {string} - Normalized letter
+   */
+  static normalizeLetter(input) {
+    if (!input || typeof input !== "string") return "";
+
+    // Convert to string and trim whitespace
+    let normalized = input.toString().trim();
+
+    // Handle empty input
+    if (normalized.length === 0) return "";
+
+    // Take only the first character
+    normalized = normalized.charAt(0);
+
+    // Convert to lowercase
+    normalized = normalized.toLowerCase();
+
+    // Handle accented characters and special cases
+    normalized = this.convertAccentedCharacters(normalized);
+
+    return normalized;
+  }
+
+  /**
+   * Converts accented characters to their base form
+   * @param {string} char - Character to convert
+   * @returns {string} - Converted character
+   */
+  static convertAccentedCharacters(char) {
+    const accentMap = {
+      à: "a",
+      á: "a",
+      â: "a",
+      ã: "a",
+      ä: "a",
+      å: "a",
+      æ: "ae",
+      è: "e",
+      é: "e",
+      ê: "e",
+      ë: "e",
+      ì: "i",
+      í: "i",
+      î: "i",
+      ï: "i",
+      ò: "o",
+      ó: "o",
+      ô: "o",
+      õ: "o",
+      ö: "o",
+      ø: "o",
+      ù: "u",
+      ú: "u",
+      û: "u",
+      ü: "u",
+      ý: "y",
+      ÿ: "y",
+      ñ: "n",
+      ç: "c",
+      ß: "ss",
+    };
+
+    return accentMap[char] || char;
+  }
+
+  /**
+   * Validates and sanitizes input for hangman game
+   * @param {string} input - Raw input from user
+   * @returns {Object} - Validation result with sanitized input and error message
+   */
+  static validateHangmanInput(input) {
+    const result = {
+      isValid: false,
+      sanitizedInput: "",
+      errorMessage: "",
+      originalInput: input,
+    };
+
+    // Check if input exists
+    if (!input) {
+      result.errorMessage = "Please enter a letter";
+      return result;
+    }
+
+    // Normalize the input
+    const normalized = this.normalizeLetter(input);
+
+    // Check if normalized input is empty
+    if (normalized.length === 0) {
+      result.errorMessage = "Please enter a valid letter";
+      return result;
+    }
+
+    // Check if it's a valid letter
+    if (!this.isValidLetter(normalized)) {
+      // Provide specific error messages based on input type
+      const originalChar = input.toString().charAt(0);
+
+      if (/[0-9]/.test(originalChar)) {
+        result.errorMessage = "Numbers are not allowed. Please enter a letter.";
+      } else if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(originalChar)) {
+        result.errorMessage =
+          "Special characters are not allowed. Please enter a letter.";
+      } else if (originalChar.length > 1) {
+        result.errorMessage = "Please enter only one letter at a time.";
+      } else {
+        result.errorMessage = "Invalid character. Please enter a letter (A-Z).";
+      }
+      return result;
+    }
+
+    // Input is valid
+    result.isValid = true;
+    result.sanitizedInput = normalized;
+    return result;
+  }
+
+  /**
+   * Checks if input contains only valid characters for hangman
+   * @param {string} input - Input to check
+   * @returns {boolean} - True if input contains only valid characters
+   */
+  static containsOnlyValidCharacters(input) {
+    if (!input || typeof input !== "string") return false;
+
+    // Check each character in the input
+    for (let i = 0; i < input.length; i++) {
+      const char = input.charAt(i);
+      const normalized = this.normalizeLetter(char);
+
+      // Allow spaces for multi-word phrases
+      if (char === " ") continue;
+
+      // Check if normalized character is valid
+      if (!/^[a-z]$/.test(normalized)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Gets user-friendly error message for invalid input
+   * @param {string} input - The invalid input
+   * @returns {string} - User-friendly error message
+   */
+  static getInputErrorMessage(input) {
+    if (!input) return "Please enter a letter";
+
+    const char = input.toString().charAt(0);
+
+    if (/[0-9]/.test(char)) {
+      return "Numbers are not allowed. Please enter a letter.";
+    } else if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(char)) {
+      return "Special characters are not allowed. Please enter a letter.";
+    } else if (input.length > 1) {
+      return "Please enter only one letter at a time.";
+    } else {
+      return "Invalid character. Please enter a letter (A-Z).";
+    }
+  }
+
   static createElement(tag, className = "", textContent = "") {
     const element = document.createElement(tag);
     if (className) element.className = className;
