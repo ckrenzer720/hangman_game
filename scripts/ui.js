@@ -210,6 +210,9 @@ class GameUI {
     // Add immediate visual feedback to the keyboard key
     const keyElement = document.querySelector(`[data-letter="${letter}"]`);
     if (keyElement) {
+      // Add key press animation
+      this.addKeyPressAnimation(keyElement);
+      
       if (success) {
         keyElement.classList.add("correct");
         this.addPulseAnimation(keyElement);
@@ -482,6 +485,66 @@ class GameUI {
       setTimeout(() => {
         element.classList.remove("shake");
       }, 500);
+    }
+  }
+
+  addKeyPressAnimation(element) {
+    if (element) {
+      element.classList.add("press-animation");
+      setTimeout(() => {
+        element.classList.remove("press-animation");
+      }, 150);
+    }
+  }
+
+  addLetterRevealAnimation(element) {
+    if (element) {
+      element.classList.add("letter-reveal");
+      element.style.animation = "letterReveal 0.6s ease-out";
+      setTimeout(() => {
+        element.classList.remove("letter-reveal");
+        element.style.animation = "";
+      }, 600);
+    }
+  }
+
+  addCelebrationAnimation(element) {
+    if (element) {
+      element.classList.add("celebration-bounce");
+      setTimeout(() => {
+        element.classList.remove("celebration-bounce");
+      }, 600);
+    }
+  }
+
+  addFailureAnimation(element) {
+    if (element) {
+      element.classList.add("failure-shake");
+      setTimeout(() => {
+        element.classList.remove("failure-shake");
+      }, 500);
+    }
+  }
+
+  createConfetti() {
+    const container = document.querySelector('.game-container');
+    if (!container) return;
+
+    // Create confetti particles
+    for (let i = 0; i < 20; i++) {
+      const confetti = document.createElement('div');
+      confetti.className = 'confetti';
+      confetti.style.left = Math.random() * 100 + '%';
+      confetti.style.top = '50%';
+      confetti.style.animationDelay = Math.random() * 0.5 + 's';
+      container.appendChild(confetti);
+
+      // Remove confetti after animation
+      setTimeout(() => {
+        if (confetti.parentNode) {
+          confetti.parentNode.removeChild(confetti);
+        }
+      }, 3000);
     }
   }
 

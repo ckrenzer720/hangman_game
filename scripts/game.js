@@ -364,6 +364,9 @@ class HangmanGame {
     });
 
     this.gameState.hiddenWord = wordArray.join(" ");
+    
+    // Use animated display for letter reveals
+    this.updateWordDisplayWithAnimation();
   }
 
   drawHangmanPart() {
@@ -394,9 +397,39 @@ class HangmanGame {
       // Check for achievements
       this.checkAchievements();
 
+      // Add celebration effects
+      this.triggerWinCelebration();
+
       this.updateStatistics("won");
       this.showGameOverModal("You Won!", this.gameState.currentWord);
     }
+  }
+
+  triggerWinCelebration() {
+    // Add celebration animation to word display
+    const wordDisplay = document.getElementById("word-display");
+    if (wordDisplay) {
+      wordDisplay.classList.add("celebration");
+      setTimeout(() => {
+        wordDisplay.classList.remove("celebration");
+      }, 2000);
+    }
+
+    // Create confetti effect
+    if (window.ui && window.ui.createConfetti) {
+      window.ui.createConfetti();
+    }
+
+    // Add celebration to all revealed letters
+    const revealedLetters = document.querySelectorAll('.word-letter.revealed');
+    revealedLetters.forEach((letter, index) => {
+      setTimeout(() => {
+        letter.classList.add('celebration-bounce');
+        setTimeout(() => {
+          letter.classList.remove('celebration-bounce');
+        }, 600);
+      }, index * 100);
+    });
   }
 
   checkLoseCondition() {
@@ -405,8 +438,32 @@ class HangmanGame {
       this.gameState.maxIncorrectGuesses
     ) {
       this.gameState.gameStatus = "lost";
+      
+      // Add failure effects
+      this.triggerFailureEffect();
+      
       this.updateStatistics("lost");
       this.showGameOverModal("Game Over!", this.gameState.currentWord);
+    }
+  }
+
+  triggerFailureEffect() {
+    // Add failure animation to word display
+    const wordDisplay = document.getElementById("word-display");
+    if (wordDisplay) {
+      wordDisplay.classList.add("failure-shake");
+      setTimeout(() => {
+        wordDisplay.classList.remove("failure-shake");
+      }, 500);
+    }
+
+    // Add failure animation to hangman figure
+    const hangmanFigure = document.querySelector('.hangman-figure');
+    if (hangmanFigure) {
+      hangmanFigure.classList.add("failure-shake");
+      setTimeout(() => {
+        hangmanFigure.classList.remove("failure-shake");
+      }, 500);
     }
   }
 
@@ -477,6 +534,34 @@ class HangmanGame {
           return `<span class="${letterClass}">${char}</span>`;
         })
         .join("");
+    }
+  }
+
+  updateWordDisplayWithAnimation() {
+    const wordDisplay = document.getElementById("word-display");
+    if (wordDisplay) {
+      const currentLetters = wordDisplay.querySelectorAll('.word-letter');
+      const newWord = this.gameState.hiddenWord.split("");
+      
+      newWord.forEach((char, index) => {
+        if (char === " ") return;
+        
+        const currentLetter = currentLetters[index];
+        const isRevealed = char !== "_";
+        const wasHidden = currentLetter && currentLetter.textContent === "_";
+        
+        if (isRevealed && wasHidden) {
+          // Letter was just revealed - add animation
+          const newLetter = document.createElement('span');
+          newLetter.className = 'word-letter revealed';
+          newLetter.textContent = char;
+          newLetter.style.animation = 'letterReveal 0.6s ease-out';
+          
+          if (currentLetter) {
+            currentLetter.parentNode.replaceChild(newLetter, currentLetter);
+          }
+        }
+      });
     }
   }
 
