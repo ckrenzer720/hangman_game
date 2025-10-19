@@ -1116,56 +1116,266 @@
 }
 
 /* ========================================
-   DIFFICULTY PROGRESSION DISPLAY
+   PROGRESS INDICATORS
    ======================================== */
 
-.difficulty-indicator {
-  display: inline-flex;
+.progress-indicators {
+  margin-top: var(--spacing-lg);
+  padding: var(--spacing-lg);
+  background: var(--white);
+  border: 1px solid var(--light-gray);
+  border-radius: var(--border-radius-sm);
+}
+
+.progress-group {
+  margin-bottom: var(--spacing-lg);
+}
+
+.progress-label {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: var(--text-color);
+  margin-bottom: var(--spacing-sm);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.progress-bar-container {
+  display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
+  gap: var(--spacing-md);
+}
+
+.progress-bar {
+  flex: 1;
+  height: 12px;
   background: var(--light-gray);
-  border-radius: var(--border-radius-md);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4ecdc4, #44a08d, #2ecc71);
+  border-radius: 6px;
+  transition: width 0.5s ease-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  animation: progressShine 2s ease-in-out infinite;
+}
+
+.progress-text {
   font-size: 0.9rem;
   font-weight: bold;
   color: var(--dark-gray);
+  min-width: 40px;
+  text-align: right;
+}
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.stat-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: var(--background-color);
+  border: 1px solid var(--light-gray);
+  border-radius: var(--border-radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.stat-indicator:hover {
+  background: var(--light-gray);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.stat-icon {
+  font-size: 1.5rem;
+  min-width: 30px;
+  text-align: center;
+}
+
+.stat-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--secondary-color);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.stat-value {
+  font-size: 1rem;
+  font-weight: bold;
+  color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Difficulty Indicator Styles */
+.difficulty-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  font-size: 0.8rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all var(--transition-fast);
 }
 
 .difficulty-indicator.easy {
-  background: #d4edda;
+  background: linear-gradient(135deg, #d4edda, #c3e6cb);
   color: #155724;
+  border: 1px solid #c3e6cb;
 }
 
 .difficulty-indicator.medium {
-  background: #fff3cd;
+  background: linear-gradient(135deg, #fff3cd, #ffeaa7);
   color: #856404;
+  border: 1px solid #ffeaa7;
 }
 
 .difficulty-indicator.hard {
-  background: #f8d7da;
+  background: linear-gradient(135deg, #f8d7da, #f5c6cb);
   color: #721c24;
+  border: 1px solid #f5c6cb;
 }
 
+/* Streak Indicator Styles */
 .streak-indicator {
   display: inline-flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: linear-gradient(45deg, #ff6b6b, #ffa500);
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: linear-gradient(135deg, #ff6b6b, #ffa500);
   color: white;
-  border-radius: var(--border-radius-md);
-  font-size: 0.9rem;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.8rem;
   font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all var(--transition-fast);
+  position: relative;
+  overflow: hidden;
 }
 
+.streak-indicator::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+.streak-indicator:hover::before {
+  left: 100%;
+}
+
+/* Score Display Styles */
 .score-display {
   display: inline-flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: linear-gradient(45deg, #4ecdc4, #44a08d);
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: linear-gradient(135deg, #4ecdc4, #44a08d);
   color: white;
-  border-radius: var(--border-radius-md);
-  font-size: 0.9rem;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.8rem;
   font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all var(--transition-fast);
+  position: relative;
+  overflow: hidden;
+}
+
+.score-display::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+.score-display:hover::before {
+  left: 100%;
+}
+
+/* Animation for value changes */
+.stat-value.animate {
+  animation: valueChange 0.3s ease-out;
+}
+
+@keyframes valueChange {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+    color: var(--accent-color);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Progress bar animations */
+.progress-fill.animate {
+  animation: progressFill 0.8s ease-out;
+}
+
+@keyframes progressFill {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: var(--progress-width, 0%);
+  }
 }

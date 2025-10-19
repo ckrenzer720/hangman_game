@@ -364,7 +364,7 @@ class HangmanGame {
     });
 
     this.gameState.hiddenWord = wordArray.join(" ");
-    
+
     // Use animated display for letter reveals
     this.updateWordDisplayWithAnimation();
   }
@@ -390,6 +390,11 @@ class HangmanGame {
       // Calculate score based on difficulty and performance
       const baseScore = this.calculateScore();
       this.gameState.score += baseScore;
+
+      // Update score display
+      if (window.ui && window.ui.updateScoreDisplay) {
+        window.ui.updateScoreDisplay();
+      }
 
       // Update difficulty progression
       this.updateDifficultyProgression();
@@ -421,12 +426,12 @@ class HangmanGame {
     }
 
     // Add celebration to all revealed letters
-    const revealedLetters = document.querySelectorAll('.word-letter.revealed');
+    const revealedLetters = document.querySelectorAll(".word-letter.revealed");
     revealedLetters.forEach((letter, index) => {
       setTimeout(() => {
-        letter.classList.add('celebration-bounce');
+        letter.classList.add("celebration-bounce");
         setTimeout(() => {
-          letter.classList.remove('celebration-bounce');
+          letter.classList.remove("celebration-bounce");
         }, 600);
       }, index * 100);
     });
@@ -438,10 +443,10 @@ class HangmanGame {
       this.gameState.maxIncorrectGuesses
     ) {
       this.gameState.gameStatus = "lost";
-      
+
       // Add failure effects
       this.triggerFailureEffect();
-      
+
       this.updateStatistics("lost");
       this.showGameOverModal("Game Over!", this.gameState.currentWord);
     }
@@ -458,7 +463,7 @@ class HangmanGame {
     }
 
     // Add failure animation to hangman figure
-    const hangmanFigure = document.querySelector('.hangman-figure');
+    const hangmanFigure = document.querySelector(".hangman-figure");
     if (hangmanFigure) {
       hangmanFigure.classList.add("failure-shake");
       setTimeout(() => {
@@ -518,6 +523,11 @@ class HangmanGame {
     this.updateWordDisplay();
     this.updateIncorrectLetters();
     this.updateKeyboard();
+
+    // Update progress indicators if UI is available
+    if (window.ui && window.ui.updateAllProgressIndicators) {
+      window.ui.updateAllProgressIndicators();
+    }
   }
 
   updateWordDisplay() {
@@ -540,23 +550,23 @@ class HangmanGame {
   updateWordDisplayWithAnimation() {
     const wordDisplay = document.getElementById("word-display");
     if (wordDisplay) {
-      const currentLetters = wordDisplay.querySelectorAll('.word-letter');
+      const currentLetters = wordDisplay.querySelectorAll(".word-letter");
       const newWord = this.gameState.hiddenWord.split("");
-      
+
       newWord.forEach((char, index) => {
         if (char === " ") return;
-        
+
         const currentLetter = currentLetters[index];
         const isRevealed = char !== "_";
         const wasHidden = currentLetter && currentLetter.textContent === "_";
-        
+
         if (isRevealed && wasHidden) {
           // Letter was just revealed - add animation
-          const newLetter = document.createElement('span');
-          newLetter.className = 'word-letter revealed';
+          const newLetter = document.createElement("span");
+          newLetter.className = "word-letter revealed";
           newLetter.textContent = char;
-          newLetter.style.animation = 'letterReveal 0.6s ease-out';
-          
+          newLetter.style.animation = "letterReveal 0.6s ease-out";
+
           if (currentLetter) {
             currentLetter.parentNode.replaceChild(newLetter, currentLetter);
           }
@@ -658,6 +668,11 @@ class HangmanGame {
     ) {
       this.gameState.difficulty = nextDifficulty;
       this.showDifficultyAdvancement(nextDifficulty);
+
+      // Update difficulty indicator
+      if (window.ui && window.ui.updateDifficultyIndicator) {
+        window.ui.updateDifficultyIndicator();
+      }
     }
   }
 
@@ -1108,6 +1123,11 @@ class HangmanGame {
 
     // Save to localStorage
     this.saveStatistics();
+
+    // Update streak indicator
+    if (window.ui && window.ui.updateStreakIndicator) {
+      window.ui.updateStreakIndicator();
+    }
   }
 
   getStatistics() {

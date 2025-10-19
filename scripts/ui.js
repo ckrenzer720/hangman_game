@@ -11,6 +11,7 @@ class GameUI {
   init() {
     this.createVirtualKeyboard();
     this.bindEvents();
+    this.initializeProgressIndicators();
   }
 
   createVirtualKeyboard() {
@@ -212,7 +213,7 @@ class GameUI {
     if (keyElement) {
       // Add key press animation
       this.addKeyPressAnimation(keyElement);
-      
+
       if (success) {
         keyElement.classList.add("correct");
         this.addPulseAnimation(keyElement);
@@ -243,6 +244,7 @@ class GameUI {
 
     this.game.updateDisplay();
     this.updateGameStatus();
+    this.updateAllProgressIndicators();
   }
 
   startNewGame() {
@@ -262,6 +264,7 @@ class GameUI {
 
     this.game.resetGame();
     this.updateGameStatus();
+    this.updateAllProgressIndicators();
     this.showFeedback("success", "New game started! Good luck!");
   }
 
@@ -527,16 +530,16 @@ class GameUI {
   }
 
   createConfetti() {
-    const container = document.querySelector('.game-container');
+    const container = document.querySelector(".game-container");
     if (!container) return;
 
     // Create confetti particles
     for (let i = 0; i < 20; i++) {
-      const confetti = document.createElement('div');
-      confetti.className = 'confetti';
-      confetti.style.left = Math.random() * 100 + '%';
-      confetti.style.top = '50%';
-      confetti.style.animationDelay = Math.random() * 0.5 + 's';
+      const confetti = document.createElement("div");
+      confetti.className = "confetti";
+      confetti.style.left = Math.random() * 100 + "%";
+      confetti.style.top = "50%";
+      confetti.style.animationDelay = Math.random() * 0.5 + "s";
       container.appendChild(confetti);
 
       // Remove confetti after animation
@@ -546,6 +549,114 @@ class GameUI {
         }
       }, 3000);
     }
+  }
+
+  // ========================================
+  // PROGRESS INDICATORS
+  // ========================================
+
+  initializeProgressIndicators() {
+    this.updateDifficultyIndicator();
+    this.updateStreakIndicator();
+    this.updateScoreDisplay();
+    this.updateGameProgress();
+  }
+
+  updateGameProgress() {
+    const progressFill = document.getElementById("game-progress-fill");
+    const progressText = document.getElementById("game-progress-text");
+
+    if (!progressFill || !progressText) return;
+
+    const currentWord = this.game.gameState.currentWord;
+    const hiddenWord = this.game.gameState.hiddenWord;
+
+    if (!currentWord) {
+      progressFill.style.width = "0%";
+      progressText.textContent = "0%";
+      return;
+    }
+
+    // Calculate progress based on revealed letters
+    const totalLetters = currentWord.replace(/\s/g, "").length;
+    const revealedLetters = hiddenWord
+      .replace(/\s/g, "")
+      .replace(/_/g, "").length;
+    const progressPercentage = Math.round(
+      (revealedLetters / totalLetters) * 100
+    );
+
+    // Update progress bar with animation
+    progressFill.style.setProperty(
+      "--progress-width",
+      progressPercentage + "%"
+    );
+    progressFill.classList.add("animate");
+    progressText.textContent = progressPercentage + "%";
+
+    // Remove animation class after animation completes
+    setTimeout(() => {
+      progressFill.classList.remove("animate");
+    }, 800);
+  }
+
+  updateDifficultyIndicator() {
+    const difficultyIndicator = document.getElementById("difficulty-indicator");
+    if (!difficultyIndicator) return;
+
+    const difficulty = this.game.gameState.difficulty;
+    const difficultyNames = {
+      easy: "Easy",
+      medium: "Medium",
+      hard: "Hard",
+    };
+
+    difficultyIndicator.textContent = difficultyNames[difficulty] || "Medium";
+    difficultyIndicator.className = `stat-value difficulty-indicator ${difficulty}`;
+
+    // Add animation for difficulty changes
+    this.addValueChangeAnimation(difficultyIndicator);
+  }
+
+  updateStreakIndicator() {
+    const streakIndicator = document.getElementById("streak-indicator");
+    if (!streakIndicator) return;
+
+    const stats = this.game.getStatistics();
+    const currentStreak = stats.currentStreak || 0;
+
+    streakIndicator.textContent = currentStreak.toString();
+
+    // Add animation for streak changes
+    this.addValueChangeAnimation(streakIndicator);
+  }
+
+  updateScoreDisplay() {
+    const scoreDisplay = document.getElementById("score-display");
+    if (!scoreDisplay) return;
+
+    const currentScore = this.game.gameState.score || 0;
+    scoreDisplay.textContent = currentScore.toString();
+
+    // Add animation for score changes
+    this.addValueChangeAnimation(scoreDisplay);
+  }
+
+  addValueChangeAnimation(element) {
+    if (!element) return;
+
+    element.classList.add("animate");
+    setTimeout(() => {
+      element.classList.remove("animate");
+    }, 300);
+  }
+
+  // Method to update all progress indicators
+  updateAllProgressIndicators() {
+    this.updateGameProgress();
+    this.updateDifficultyIndicator();
+    this.updateStreakIndicator();
+    this.updateScoreDisplay();
   }
 
   // ========================================

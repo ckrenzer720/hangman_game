@@ -32,6 +32,51 @@
     letter-spacing: 1px;
   }
 
+  /* Progress Indicators Mobile */
+  .progress-indicators {
+    padding: var(--spacing-sm);
+  }
+  
+  .stats-row {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-sm);
+  }
+  
+  .stat-indicator {
+    padding: var(--spacing-xs);
+  }
+  
+  .stat-icon {
+    font-size: 1.2rem;
+    min-width: 25px;
+  }
+  
+  .stat-label {
+    font-size: 0.7rem;
+  }
+  
+  .stat-value {
+    font-size: 0.9rem;
+  }
+  
+  .progress-bar-container {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    align-items: stretch;
+  }
+  
+  .progress-text {
+    text-align: center;
+    min-width: auto;
+  }
+  
+  .difficulty-indicator,
+  .streak-indicator,
+  .score-display {
+    font-size: 0.7rem;
+    padding: 2px var(--spacing-xs);
+  }
+
   .game-main {
     grid-template-columns: 1fr;
     grid-template-rows: auto auto auto auto;
@@ -147,6 +192,21 @@
 
   .game-header h1 {
     font-size: 2rem;
+  }
+
+  /* Progress Indicators Tablet */
+  .progress-indicators {
+    padding: var(--spacing-md);
+  }
+  
+  .stats-row {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-md);
+  }
+  
+  .progress-bar-container {
+    flex-direction: row;
+    align-items: center;
   }
 
   .game-main {

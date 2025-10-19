@@ -12,6 +12,52 @@
     <div class="game-container">
       <header class="game-header">
         <h1>Hangman Game</h1>
+
+        <!-- Progress Indicators -->
+        <div class="progress-indicators">
+          <div class="progress-group">
+            <div class="progress-label">Game Progress</div>
+            <div class="progress-bar-container">
+              <div class="progress-bar" id="game-progress-bar">
+                <div class="progress-fill" id="game-progress-fill"></div>
+              </div>
+              <div class="progress-text" id="game-progress-text">0%</div>
+            </div>
+          </div>
+
+          <div class="stats-row">
+            <div class="stat-indicator">
+              <div class="stat-icon">🎯</div>
+              <div class="stat-content">
+                <div class="stat-label">Difficulty</div>
+                <div
+                  class="stat-value difficulty-indicator"
+                  id="difficulty-indicator"
+                >
+                  Medium
+                </div>
+              </div>
+            </div>
+
+            <div class="stat-indicator">
+              <div class="stat-icon">🔥</div>
+              <div class="stat-content">
+                <div class="stat-label">Streak</div>
+                <div class="stat-value streak-indicator" id="streak-indicator">
+                  0
+                </div>
+              </div>
+            </div>
+
+            <div class="stat-indicator">
+              <div class="stat-icon">⭐</div>
+              <div class="stat-content">
+                <div class="stat-label">Score</div>
+                <div class="stat-value score-display" id="score-display">0</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </header>
 
       <main class="game-main">
