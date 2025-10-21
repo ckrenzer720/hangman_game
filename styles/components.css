@@ -407,7 +407,7 @@
   justify-content: center;
   align-items: center;
   padding: var(--spacing-lg);
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--modal-overlay);
   backdrop-filter: blur(4px);
 }
 
@@ -455,7 +455,7 @@
   justify-content: center;
   align-items: center;
   padding: var(--spacing-lg);
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--modal-overlay);
 }
 
 .statistics-modal.show {

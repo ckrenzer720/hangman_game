@@ -17,6 +17,9 @@ document.addEventListener("DOMContentLoaded", async function () {
 
   errorMiddleware.init();
 
+  // Initialize theme manager
+  const themeManager = new ThemeManager();
+
   try {
     // Initialize the game with error handling
     const game = await errorMiddleware.handleAsyncError(
@@ -49,6 +52,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     window.game = game;
     window.ui = ui;
     window.errorMiddleware = errorMiddleware;
+    window.themeManager = themeManager;
 
     console.log("Hangman Game - Ready to play!");
     console.log("Game state:", game.gameState);

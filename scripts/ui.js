@@ -108,6 +108,24 @@ class GameUI {
       );
     }
 
+    // Settings Button
+    const settingsBtn = document.getElementById("settings");
+    if (settingsBtn) {
+      settingsBtn.addEventListener("click", () => this.showSettings());
+    }
+
+    // Close Settings Button
+    const closeSettingsBtn = document.getElementById("close-settings");
+    if (closeSettingsBtn) {
+      closeSettingsBtn.addEventListener("click", () => this.hideSettings());
+    }
+
+    // Reset Settings Button
+    const resetSettingsBtn = document.getElementById("reset-settings");
+    if (resetSettingsBtn) {
+      resetSettingsBtn.addEventListener("click", () => this.resetSettings());
+    }
+
     // Virtual Keyboard
     const keyboard = document.getElementById("keyboard");
     if (keyboard) {
@@ -137,6 +155,16 @@ class GameUI {
       statsModal.addEventListener("click", (e) => {
         if (e.target === statsModal) {
           this.hideStatistics();
+        }
+      });
+    }
+
+    // Settings modal close on background click
+    const settingsModal = document.getElementById("settings-modal");
+    if (settingsModal) {
+      settingsModal.addEventListener("click", (e) => {
+        if (e.target === settingsModal) {
+          this.hideSettings();
         }
       });
     }
@@ -1061,6 +1089,72 @@ class GameUI {
     if (!dateString) return "";
     const date = new Date(dateString);
     return date.toLocaleDateString();
+  }
+
+  /**
+   * Shows the settings modal
+   */
+  showSettings() {
+    const modal = document.getElementById("settings-modal");
+    const content = document.getElementById("settings-content");
+    
+    if (!modal || !content) return;
+
+    // Get theme manager from global scope
+    const themeManager = window.themeManager;
+    if (!themeManager) {
+      console.error("Theme manager not available");
+      return;
+    }
+
+    // Populate settings content
+    content.innerHTML = themeManager.createSettingsUI();
+
+    // Show modal
+    modal.classList.add("show");
+    document.body.style.overflow = "hidden";
+
+    // Update theme previews after content is rendered
+    setTimeout(() => {
+      themeManager.updateThemePreviews();
+    }, 100);
+  }
+
+  /**
+   * Hides the settings modal
+   */
+  hideSettings() {
+    const modal = document.getElementById("settings-modal");
+    if (modal) {
+      modal.classList.remove("show");
+      document.body.style.overflow = "";
+    }
+  }
+
+  /**
+   * Resets settings to default values
+   */
+  resetSettings() {
+    const themeManager = window.themeManager;
+    if (!themeManager) {
+      console.error("Theme manager not available");
+      return;
+    }
+
+    // Reset to default settings
+    themeManager.resetToDefault();
+
+    // Update the settings UI
+    const content = document.getElementById("settings-content");
+    if (content) {
+      content.innerHTML = themeManager.createSettingsUI();
+      setTimeout(() => {
+        themeManager.updateThemePreviews();
+      }, 100);
+    }
+
+    // Show confirmation
+    this.showFeedback("success", "Settings reset to default values");
   }
 }
 
