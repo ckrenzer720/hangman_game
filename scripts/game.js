@@ -58,6 +58,45 @@ class HangmanGame {
     ];
 
     this.loadWords();
+    this.applySettingsFromThemeManager();
+  }
+
+  /**
+   * Apply settings from theme manager if available
+   */
+  applySettingsFromThemeManager() {
+    // Wait for theme manager to be available
+    setTimeout(() => {
+      if (window.themeManager) {
+        const settings = window.themeManager.getCurrentSettings();
+        if (settings.difficulty) {
+          this.gameState.difficulty = settings.difficulty;
+        }
+        if (settings.category) {
+          this.gameState.category = settings.category;
+        }
+      }
+    }, 100);
+  }
+
+  /**
+   * Update game settings from theme manager
+   */
+  updateGameSettings() {
+    if (window.themeManager) {
+      const settings = window.themeManager.getCurrentSettings();
+      if (
+        settings.difficulty &&
+        settings.difficulty !== this.gameState.difficulty
+      ) {
+        this.gameState.difficulty = settings.difficulty;
+        console.log(`Difficulty changed to: ${settings.difficulty}`);
+      }
+      if (settings.category && settings.category !== this.gameState.category) {
+        this.gameState.category = settings.category;
+        console.log(`Category changed to: ${settings.category}`);
+      }
+    }
   }
 
   async loadWords() {

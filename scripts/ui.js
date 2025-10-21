@@ -12,6 +12,7 @@ class GameUI {
     this.createVirtualKeyboard();
     this.bindEvents();
     this.initializeProgressIndicators();
+    this.setupSettingsListeners();
   }
 
   createVirtualKeyboard() {
@@ -1097,7 +1098,7 @@ class GameUI {
   showSettings() {
     const modal = document.getElementById("settings-modal");
     const content = document.getElementById("settings-content");
-    
+
     if (!modal || !content) return;
 
     // Get theme manager from global scope
@@ -1155,6 +1156,28 @@ class GameUI {
 
     // Show confirmation
     this.showFeedback("success", "Settings reset to default values");
+  }
+
+  /**
+   * Setup listeners for settings changes
+   */
+  setupSettingsListeners() {
+    // Listen for theme changes
+    document.addEventListener("themeChanged", (event) => {
+      const { difficulty, category } = event.detail;
+
+      // Update game settings if they changed
+      if (difficulty && difficulty !== this.game.gameState.difficulty) {
+        this.game.gameState.difficulty = difficulty;
+        this.updateDifficultyIndicator();
+        this.showFeedback("info", `Difficulty changed to ${difficulty}`);
+      }
+
+      if (category && category !== this.game.gameState.category) {
+        this.game.gameState.category = category;
+        this.showFeedback("info", `Category changed to ${category}`);
+      }
+    });
   }
 }
 

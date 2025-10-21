@@ -76,7 +76,7 @@ Phase 2 focuses on enhancing the core hangman game with advanced features, impro
   - Streak counter display
   - Score display with animations
 
-- [ ] **Theme Customization**
+- [x] **Theme Customization**
   - Light/Dark mode toggle
   - Color scheme options
   - Font size adjustments
@@ -84,7 +84,7 @@ Phase 2 focuses on enhancing the core hangman game with advanced features, impro
 
 ### 2.2 Advanced UI Components
 
-- [ ] **Settings Panel**
+- [x] **Settings Panel**
 
   - Difficulty selection
   - Category selection
