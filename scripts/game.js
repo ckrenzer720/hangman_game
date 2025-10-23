@@ -1015,6 +1015,13 @@ class HangmanGame {
       "difficultyStats",
       "categoryStats",
       "lastPlayed",
+      "gameHistory",
+      "dailyStats",
+      "weeklyStats",
+      "monthlyStats",
+      "performanceMetrics",
+      "streaks",
+      "achievements",
     ];
 
     return requiredFields.every((field) => stats.hasOwnProperty(field));
@@ -1039,12 +1046,33 @@ class HangmanGame {
       totalPlayTime: 0,
       averagePlayTime: 0,
       difficultyStats: {
-        easy: { played: 0, won: 0, lost: 0 },
-        medium: { played: 0, won: 0, lost: 0 },
-        hard: { played: 0, won: 0, lost: 0 },
+        easy: { played: 0, won: 0, lost: 0, totalTime: 0, averageTime: 0, bestTime: null },
+        medium: { played: 0, won: 0, lost: 0, totalTime: 0, averageTime: 0, bestTime: null },
+        hard: { played: 0, won: 0, lost: 0, totalTime: 0, averageTime: 0, bestTime: null },
       },
       categoryStats: {},
       lastPlayed: null,
+      // Enhanced data for dashboard
+      gameHistory: [], // Array of individual game results
+      dailyStats: {}, // Daily statistics for trends
+      weeklyStats: {}, // Weekly statistics for trends
+      monthlyStats: {}, // Monthly statistics for trends
+      performanceMetrics: {
+        accuracy: 0, // Percentage of correct guesses
+        efficiency: 0, // Score per minute
+        consistency: 0, // Standard deviation of completion times
+        improvement: 0, // Trend over time
+      },
+      streaks: {
+        current: 0,
+        best: 0,
+        longestLossStreak: 0,
+        currentLossStreak: 0,
+      },
+      achievements: {
+        totalUnlocked: 0,
+        recentlyUnlocked: [],
+      },
     };
   }
 
@@ -1085,6 +1113,34 @@ class HangmanGame {
   updateStatistics(gameResult) {
     const playTime = this.endGameTimer();
     const totalGuesses = this.gameState.guessedLetters.length;
+    const correctGuesses = this.gameState.guessedLetters.filter(letter => 
+      this.gameState.currentWord.includes(letter)
+    ).length;
+    const currentDate = new Date();
+    const dateKey = currentDate.toISOString().split('T')[0];
+    const weekKey = this.getWeekKey(currentDate);
+    const monthKey = currentDate.toISOString().substring(0, 7);
+
+    // Create game record for history
+    const gameRecord = {
+      id: Date.now(),
+      result: gameResult,
+      difficulty: this.gameState.difficulty,
+      category: this.gameState.category,
+      playTime: playTime,
+      totalGuesses: totalGuesses,
+      correctGuesses: correctGuesses,
+      incorrectGuesses: this.gameState.incorrectGuesses.length,
+      score: this.gameState.score,
+      timestamp: currentDate.toISOString(),
+      word: this.gameState.currentWord,
+    };
+
+    // Add to game history (keep last 100 games)
+    this.statistics.gameHistory.push(gameRecord);
+    if (this.statistics.gameHistory.length > 100) {
+      this.statistics.gameHistory = this.statistics.gameHistory.slice(-100);
+    }
 
     // Update basic counts
     this.statistics.gamesPlayed++;
@@ -1095,9 +1151,18 @@ class HangmanGame {
         this.statistics.bestStreak,
         this.statistics.currentStreak
       );
+      this.statistics.streaks.current = this.statistics.currentStreak;
+      this.statistics.streaks.best = this.statistics.bestStreak;
+      this.statistics.streaks.currentLossStreak = 0;
     } else if (gameResult === "lost") {
       this.statistics.gamesLost++;
       this.statistics.currentStreak = 0;
+      this.statistics.streaks.current = 0;
+      this.statistics.streaks.currentLossStreak++;
+      this.statistics.streaks.longestLossStreak = Math.max(
+        this.statistics.streaks.longestLossStreak,
+        this.statistics.streaks.currentLossStreak
+      );
       // Reset difficulty progression on loss
       this.difficultyProgression.consecutiveWins = 0;
     }
@@ -1139,8 +1204,18 @@ class HangmanGame {
     // Update difficulty statistics
     const difficulty = this.gameState.difficulty;
     this.statistics.difficultyStats[difficulty].played++;
+    this.statistics.difficultyStats[difficulty].totalTime += playTime;
+    this.statistics.difficultyStats[difficulty].averageTime = 
+      this.statistics.difficultyStats[difficulty].played > 0
+        ? Math.round(this.statistics.difficultyStats[difficulty].totalTime / this.statistics.difficultyStats[difficulty].played)
+        : 0;
+    
     if (gameResult === "won") {
       this.statistics.difficultyStats[difficulty].won++;
+      if (!this.statistics.difficultyStats[difficulty].bestTime || 
+          playTime < this.statistics.difficultyStats[difficulty].bestTime) {
+        this.statistics.difficultyStats[difficulty].bestTime = playTime;
+      }
     } else if (gameResult === "lost") {
       this.statistics.difficultyStats[difficulty].lost++;
     }
@@ -1148,17 +1223,60 @@ class HangmanGame {
     // Update category statistics
     const category = this.gameState.category;
     if (!this.statistics.categoryStats[category]) {
-      this.statistics.categoryStats[category] = { played: 0, won: 0, lost: 0 };
+      this.statistics.categoryStats[category] = { 
+        played: 0, 
+        won: 0, 
+        lost: 0, 
+        totalTime: 0, 
+        averageTime: 0, 
+        bestTime: null 
+      };
     }
     this.statistics.categoryStats[category].played++;
+    this.statistics.categoryStats[category].totalTime += playTime;
+    this.statistics.categoryStats[category].averageTime = 
+      this.statistics.categoryStats[category].played > 0
+        ? Math.round(this.statistics.categoryStats[category].totalTime / this.statistics.categoryStats[category].played)
+        : 0;
+    
     if (gameResult === "won") {
       this.statistics.categoryStats[category].won++;
+      if (!this.statistics.categoryStats[category].bestTime || 
+          playTime < this.statistics.categoryStats[category].bestTime) {
+        this.statistics.categoryStats[category].bestTime = playTime;
+      }
     } else if (gameResult === "lost") {
       this.statistics.categoryStats[category].lost++;
     }
 
+    // Update daily statistics
+    if (!this.statistics.dailyStats[dateKey]) {
+      this.statistics.dailyStats[dateKey] = {
+        gamesPlayed: 0,
+        gamesWon: 0,
+        gamesLost: 0,
+        totalTime: 0,
+        totalScore: 0,
+        averageTime: 0,
+      };
+    }
+    this.statistics.dailyStats[dateKey].gamesPlayed++;
+    this.statistics.dailyStats[dateKey].totalTime += playTime;
+    this.statistics.dailyStats[dateKey].totalScore += this.gameState.score;
+    this.statistics.dailyStats[dateKey].averageTime = 
+      Math.round(this.statistics.dailyStats[dateKey].totalTime / this.statistics.dailyStats[dateKey].gamesPlayed);
+    
+    if (gameResult === "won") {
+      this.statistics.dailyStats[dateKey].gamesWon++;
+    } else {
+      this.statistics.dailyStats[dateKey].gamesLost++;
+    }
+
+    // Update performance metrics
+    this.updatePerformanceMetrics();
+
     // Update last played
-    this.statistics.lastPlayed = new Date().toISOString();
+    this.statistics.lastPlayed = currentDate.toISOString();
 
     // Save to localStorage
     this.saveStatistics();
@@ -1169,8 +1287,308 @@ class HangmanGame {
     }
   }
 
+  /**
+   * Gets week key for weekly statistics
+   * @param {Date} date - Date to get week key for
+   * @returns {string} - Week key in YYYY-WW format
+   */
+  getWeekKey(date) {
+    const year = date.getFullYear();
+    const week = this.getWeekNumber(date);
+    return `${year}-W${week.toString().padStart(2, '0')}`;
+  }
+
+  /**
+   * Gets week number of the year
+   * @param {Date} date - Date to get week number for
+   * @returns {number} - Week number
+   */
+  getWeekNumber(date) {
+    const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+    const pastDaysOfYear = (date - firstDayOfYear) / 86400000;
+    return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+  }
+
+  /**
+   * Updates performance metrics
+   */
+  updatePerformanceMetrics() {
+    if (this.statistics.gameHistory.length === 0) return;
+
+    // Calculate accuracy (percentage of correct guesses)
+    const totalGuesses = this.statistics.totalGuesses;
+    const correctGuesses = this.statistics.gameHistory.reduce((sum, game) => sum + game.correctGuesses, 0);
+    this.statistics.performanceMetrics.accuracy = totalGuesses > 0 
+      ? Math.round((correctGuesses / totalGuesses) * 100) 
+      : 0;
+
+    // Calculate efficiency (score per minute)
+    const totalScore = this.statistics.gameHistory.reduce((sum, game) => sum + game.score, 0);
+    const totalMinutes = this.statistics.totalPlayTime / 60000;
+    this.statistics.performanceMetrics.efficiency = totalMinutes > 0 
+      ? Math.round(totalScore / totalMinutes) 
+      : 0;
+
+    // Calculate consistency (standard deviation of completion times)
+    const completionTimes = this.statistics.gameHistory
+      .filter(game => game.result === 'won')
+      .map(game => game.playTime);
+    
+    if (completionTimes.length > 1) {
+      const mean = completionTimes.reduce((sum, time) => sum + time, 0) / completionTimes.length;
+      const variance = completionTimes.reduce((sum, time) => sum + Math.pow(time - mean, 2), 0) / completionTimes.length;
+      this.statistics.performanceMetrics.consistency = Math.round(Math.sqrt(variance));
+    }
+
+    // Calculate improvement trend (comparing recent vs older games)
+    if (this.statistics.gameHistory.length >= 10) {
+      const recentGames = this.statistics.gameHistory.slice(-5);
+      const olderGames = this.statistics.gameHistory.slice(-10, -5);
+      
+      const recentAvgTime = recentGames.reduce((sum, game) => sum + game.playTime, 0) / recentGames.length;
+      const olderAvgTime = olderGames.reduce((sum, game) => sum + game.playTime, 0) / olderGames.length;
+      
+      this.statistics.performanceMetrics.improvement = olderAvgTime > 0 
+        ? Math.round(((olderAvgTime - recentAvgTime) / olderAvgTime) * 100) 
+        : 0;
+    }
+  }
+
   getStatistics() {
     return { ...this.statistics };
+  }
+
+  /**
+   * Gets dashboard-specific statistics with enhanced data
+   * @returns {Object} - Dashboard statistics
+   */
+  getDashboardStatistics() {
+    const stats = this.getStatistics();
+    const achievements = this.getAchievements();
+    
+    // Calculate additional dashboard metrics
+    const unlockedAchievements = Object.values(achievements).filter(achievement => achievement.unlocked).length;
+    const totalAchievements = Object.keys(achievements).length;
+    
+    return {
+      ...stats,
+      achievements: {
+        ...stats.achievements,
+        totalUnlocked: unlockedAchievements,
+        totalAvailable: totalAchievements,
+        unlockedPercentage: totalAchievements > 0 ? Math.round((unlockedAchievements / totalAchievements) * 100) : 0,
+      },
+      // Add trend data for charts
+      trends: this.getTrendData(),
+      // Add performance insights
+      insights: this.getPerformanceInsights(),
+    };
+  }
+
+  /**
+   * Gets trend data for charts
+   * @returns {Object} - Trend data
+   */
+  getTrendData() {
+    const dailyData = Object.entries(this.statistics.dailyStats)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-30) // Last 30 days
+      .map(([date, data]) => ({
+        date,
+        gamesPlayed: data.gamesPlayed,
+        gamesWon: data.gamesWon,
+        winRate: data.gamesPlayed > 0 ? Math.round((data.gamesWon / data.gamesPlayed) * 100) : 0,
+        averageTime: data.averageTime,
+        totalScore: data.totalScore,
+      }));
+
+    const weeklyData = this.getWeeklyTrendData();
+    const monthlyData = this.getMonthlyTrendData();
+
+    return {
+      daily: dailyData,
+      weekly: weeklyData,
+      monthly: monthlyData,
+    };
+  }
+
+  /**
+   * Gets weekly trend data
+   * @returns {Array} - Weekly trend data
+   */
+  getWeeklyTrendData() {
+    const weeklyStats = {};
+    
+    // Aggregate daily stats into weekly stats
+    Object.entries(this.statistics.dailyStats).forEach(([date, data]) => {
+      const weekKey = this.getWeekKey(new Date(date));
+      if (!weeklyStats[weekKey]) {
+        weeklyStats[weekKey] = {
+          week: weekKey,
+          gamesPlayed: 0,
+          gamesWon: 0,
+          totalTime: 0,
+          totalScore: 0,
+        };
+      }
+      weeklyStats[weekKey].gamesPlayed += data.gamesPlayed;
+      weeklyStats[weekKey].gamesWon += data.gamesWon;
+      weeklyStats[weekKey].totalTime += data.totalTime;
+      weeklyStats[weekKey].totalScore += data.totalScore;
+    });
+
+    return Object.values(weeklyStats)
+      .sort((a, b) => a.week.localeCompare(b.week))
+      .slice(-12) // Last 12 weeks
+      .map(week => ({
+        ...week,
+        winRate: week.gamesPlayed > 0 ? Math.round((week.gamesWon / week.gamesPlayed) * 100) : 0,
+        averageTime: week.gamesPlayed > 0 ? Math.round(week.totalTime / week.gamesPlayed) : 0,
+      }));
+  }
+
+  /**
+   * Gets monthly trend data
+   * @returns {Array} - Monthly trend data
+   */
+  getMonthlyTrendData() {
+    const monthlyStats = {};
+    
+    // Aggregate daily stats into monthly stats
+    Object.entries(this.statistics.dailyStats).forEach(([date, data]) => {
+      const monthKey = date.substring(0, 7); // YYYY-MM
+      if (!monthlyStats[monthKey]) {
+        monthlyStats[monthKey] = {
+          month: monthKey,
+          gamesPlayed: 0,
+          gamesWon: 0,
+          totalTime: 0,
+          totalScore: 0,
+        };
+      }
+      monthlyStats[monthKey].gamesPlayed += data.gamesPlayed;
+      monthlyStats[monthKey].gamesWon += data.gamesWon;
+      monthlyStats[monthKey].totalTime += data.totalTime;
+      monthlyStats[monthKey].totalScore += data.totalScore;
+    });
+
+    return Object.values(monthlyStats)
+      .sort((a, b) => a.month.localeCompare(b.month))
+      .slice(-12) // Last 12 months
+      .map(month => ({
+        ...month,
+        winRate: month.gamesPlayed > 0 ? Math.round((month.gamesWon / month.gamesPlayed) * 100) : 0,
+        averageTime: month.gamesPlayed > 0 ? Math.round(month.totalTime / month.gamesPlayed) : 0,
+      }));
+  }
+
+  /**
+   * Gets performance insights
+   * @returns {Object} - Performance insights
+   */
+  getPerformanceInsights() {
+    const insights = {
+      strengths: [],
+      improvements: [],
+      recommendations: [],
+    };
+
+    // Analyze performance metrics
+    if (this.statistics.performanceMetrics.accuracy > 80) {
+      insights.strengths.push("High accuracy in letter guessing");
+    } else if (this.statistics.performanceMetrics.accuracy < 60) {
+      insights.improvements.push("Consider being more strategic with letter choices");
+    }
+
+    if (this.statistics.performanceMetrics.efficiency > 50) {
+      insights.strengths.push("Efficient scoring rate");
+    } else if (this.statistics.performanceMetrics.efficiency < 20) {
+      insights.improvements.push("Try to complete games faster for better scores");
+    }
+
+    if (this.statistics.performanceMetrics.consistency < 10000) {
+      insights.strengths.push("Consistent completion times");
+    } else {
+      insights.improvements.push("Work on maintaining consistent performance");
+    }
+
+    if (this.statistics.performanceMetrics.improvement > 10) {
+      insights.strengths.push("Improving over time");
+    } else if (this.statistics.performanceMetrics.improvement < -10) {
+      insights.improvements.push("Performance has declined recently");
+    }
+
+    // Generate recommendations
+    if (this.statistics.winPercentage < 50) {
+      insights.recommendations.push("Try playing on easier difficulty to build confidence");
+    }
+
+    if (this.statistics.streaks.current === 0 && this.statistics.gamesPlayed > 5) {
+      insights.recommendations.push("Focus on consistency to build winning streaks");
+    }
+
+    if (this.statistics.averagePlayTime > 60000) {
+      insights.recommendations.push("Try to make faster decisions to improve your time");
+    }
+
+    return insights;
+  }
+
+  /**
+   * Exports statistics to JSON format
+   * @returns {string} - JSON string of statistics
+   */
+  exportStatistics() {
+    const exportData = {
+      exportDate: new Date().toISOString(),
+      version: "1.0",
+      statistics: this.getDashboardStatistics(),
+      achievements: this.getAchievements(),
+      gameHistory: this.statistics.gameHistory,
+    };
+
+    return JSON.stringify(exportData, null, 2);
+  }
+
+  /**
+   * Exports statistics to CSV format
+   * @returns {string} - CSV string of game history
+   */
+  exportStatisticsCSV() {
+    if (this.statistics.gameHistory.length === 0) {
+      return "No game history available for export";
+    }
+
+    const headers = [
+      "Date",
+      "Result",
+      "Difficulty",
+      "Category",
+      "Play Time (ms)",
+      "Total Guesses",
+      "Correct Guesses",
+      "Incorrect Guesses",
+      "Score",
+      "Word"
+    ];
+
+    const csvRows = [
+      headers.join(","),
+      ...this.statistics.gameHistory.map(game => [
+        new Date(game.timestamp).toLocaleDateString(),
+        game.result,
+        game.difficulty,
+        game.category,
+        game.playTime,
+        game.totalGuesses,
+        game.correctGuesses,
+        game.incorrectGuesses,
+        game.score,
+        `"${game.word}"`
+      ].join(","))
+    ];
+
+    return csvRows.join("\n");
   }
 
   resetStatistics() {

@@ -695,7 +695,7 @@ class GameUI {
   showStatistics() {
     const modal = document.getElementById("statistics-modal");
     if (modal) {
-      this.populateStatistics();
+      this.populateStatisticsDashboard();
       modal.classList.add("show");
     }
   }
@@ -707,13 +707,13 @@ class GameUI {
     }
   }
 
-  populateStatistics() {
+  populateStatisticsDashboard() {
     const content = document.getElementById("statistics-content");
     if (!content) return;
 
     try {
-      const stats = this.game.getStatistics();
-      this.renderStatisticsContent(content, stats);
+      const stats = this.game.getDashboardStatistics();
+      this.renderStatisticsDashboard(content, stats);
     } catch (error) {
       console.error("Error loading statistics:", error);
       this.renderStatisticsError(content, error);
@@ -721,126 +721,187 @@ class GameUI {
   }
 
   /**
-   * Renders statistics content
+   * Renders comprehensive statistics dashboard
    * @param {HTMLElement} content - Content container
-   * @param {Object} stats - Statistics data
+   * @param {Object} stats - Dashboard statistics data
    */
-  renderStatisticsContent(content, stats) {
+  renderStatisticsDashboard(content, stats) {
     content.innerHTML = `
-      <div class="stat-group">
-        <h3>Games Played</h3>
-        <div class="stat-value">${stats.gamesPlayed}</div>
-        <div class="stat-label">Total Games</div>
-      </div>
-      
-      <div class="stat-group">
-        <h3>Win Rate</h3>
-        <div class="stat-value">${stats.winPercentage}%</div>
-        <div class="stat-label">${stats.gamesWon} wins / ${
-      stats.gamesLost
-    } losses</div>
-      </div>
-      
-      <div class="stat-group">
-        <h3>Current Streak</h3>
-        <div class="stat-value">${stats.currentStreak}</div>
-        <div class="stat-label">Consecutive Wins</div>
-      </div>
-      
-      <div class="stat-group">
-        <h3>Best Streak</h3>
-        <div class="stat-value">${stats.bestStreak}</div>
-        <div class="stat-label">Longest Streak</div>
-      </div>
-      
-      <div class="stat-group">
-        <h3>Average Guesses</h3>
-        <div class="stat-value">${stats.averageGuessesPerGame}</div>
-        <div class="stat-label">Per Game</div>
-      </div>
-      
-      <div class="stat-group">
-        <h3>Fastest Time</h3>
-        <div class="stat-value time-display">${this.formatTime(
-          stats.fastestCompletionTime
-        )}</div>
-        <div class="stat-label">Best Completion</div>
-      </div>
-      
-      <div class="stat-group">
-        <h3>Average Time</h3>
-        <div class="stat-value time-display">${this.formatTime(
-          stats.averagePlayTime
-        )}</div>
-        <div class="stat-label">Per Game</div>
-      </div>
-      
-      <div class="stat-group">
-        <h3>Total Time</h3>
-        <div class="stat-value time-display">${this.formatTime(
-          stats.totalPlayTime
-        )}</div>
-        <div class="stat-label">All Games</div>
-      </div>
-      
-      <div class="stat-group">
-        <h3>Current Score</h3>
-        <div class="stat-value">${this.game.gameState.score}</div>
-        <div class="stat-label">Total Points</div>
-      </div>
-      
-      <div class="stat-group">
-        <h3>Difficulty Level</h3>
-        <div class="stat-value">${this.game.gameState.difficulty.toUpperCase()}</div>
-        <div class="stat-label">Current Difficulty</div>
-      </div>
-      
-      <div class="stat-group">
-        <h3>Consecutive Wins</h3>
-        <div class="stat-value">${
-          this.game.difficultyProgression.consecutiveWins
-        }</div>
-        <div class="stat-label">In Current Streak</div>
-      </div>
-      
-      <div class="statistics-grid">
-        <div class="difficulty-stats">
-          <h4>Difficulty Breakdown</h4>
-          ${Object.entries(stats.difficultyStats)
-            .map(
-              ([difficulty, data]) => `
-            <div class="difficulty-item">
-              <span class="difficulty-name">${difficulty}</span>
-              <span class="stat-value">${data.played} games</span>
+      <div class="dashboard-container">
+        <!-- Header with key metrics -->
+        <div class="dashboard-header">
+          <h2>📊 Statistics Dashboard</h2>
+          <div class="key-metrics">
+            <div class="metric-card">
+              <div class="metric-icon">🎮</div>
+              <div class="metric-content">
+                <div class="metric-value">${stats.gamesPlayed}</div>
+                <div class="metric-label">Games Played</div>
+              </div>
             </div>
-          `
-            )
-            .join("")}
+            <div class="metric-card">
+              <div class="metric-icon">🏆</div>
+              <div class="metric-content">
+                <div class="metric-value">${stats.winPercentage}%</div>
+                <div class="metric-label">Win Rate</div>
+              </div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-icon">🔥</div>
+              <div class="metric-content">
+                <div class="metric-value">${stats.streaks.current}</div>
+                <div class="metric-label">Current Streak</div>
+              </div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-icon">⭐</div>
+              <div class="metric-content">
+                <div class="metric-value">${this.game.gameState.score}</div>
+                <div class="metric-label">Total Score</div>
+              </div>
+            </div>
+          </div>
         </div>
-        
-        <div class="category-stats">
-          <h4>Category Breakdown</h4>
-          ${Object.entries(stats.categoryStats)
-            .slice(0, 5)
-            .map(
-              ([category, data]) => `
-            <div class="category-item">
-              <span class="category-name">${category}</span>
-              <span class="stat-value">${data.played} games</span>
+
+        <!-- Performance Charts Section -->
+        <div class="dashboard-section">
+          <h3>📈 Performance Trends</h3>
+          <div class="charts-container">
+            <div class="chart-card">
+              <h4>Win Rate Over Time</h4>
+              <div class="chart-placeholder" id="win-rate-chart">
+                ${this.renderWinRateChart(stats.trends.daily)}
+              </div>
             </div>
-          `
-            )
-            .join("")}
-          ${
-            Object.keys(stats.categoryStats).length > 5
-              ? `<div class="category-item">
-              <span class="category-name">+${
-                Object.keys(stats.categoryStats).length - 5
-              } more</span>
-              <span class="stat-value"></span>
-            </div>`
-              : ""
-          }
+            <div class="chart-card">
+              <h4>Games Played Daily</h4>
+              <div class="chart-placeholder" id="games-daily-chart">
+                ${this.renderGamesDailyChart(stats.trends.daily)}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detailed Statistics Grid -->
+        <div class="dashboard-section">
+          <h3>📋 Detailed Statistics</h3>
+          <div class="stats-grid">
+            <div class="stat-group">
+              <h4>Game Performance</h4>
+              <div class="stat-item">
+                <span class="stat-label">Games Won</span>
+                <span class="stat-value">${stats.gamesWon}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Games Lost</span>
+                <span class="stat-value">${stats.gamesLost}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Best Streak</span>
+                <span class="stat-value">${stats.streaks.best}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Longest Loss Streak</span>
+                <span class="stat-value">${stats.streaks.longestLossStreak}</span>
+              </div>
+            </div>
+
+            <div class="stat-group">
+              <h4>Time Performance</h4>
+              <div class="stat-item">
+                <span class="stat-label">Fastest Time</span>
+                <span class="stat-value">${this.formatTime(stats.fastestCompletionTime)}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Average Time</span>
+                <span class="stat-value">${this.formatTime(stats.averagePlayTime)}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Total Time</span>
+                <span class="stat-value">${this.formatTime(stats.totalPlayTime)}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Last Played</span>
+                <span class="stat-value">${this.formatDate(stats.lastPlayed)}</span>
+              </div>
+            </div>
+
+            <div class="stat-group">
+              <h4>Accuracy & Efficiency</h4>
+              <div class="stat-item">
+                <span class="stat-label">Guess Accuracy</span>
+                <span class="stat-value">${stats.performanceMetrics.accuracy}%</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Score Efficiency</span>
+                <span class="stat-value">${stats.performanceMetrics.efficiency}/min</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Consistency</span>
+                <span class="stat-value">${this.formatConsistency(stats.performanceMetrics.consistency)}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Improvement</span>
+                <span class="stat-value">${this.formatImprovement(stats.performanceMetrics.improvement)}</span>
+              </div>
+            </div>
+
+            <div class="stat-group">
+              <h4>Achievements</h4>
+              <div class="stat-item">
+                <span class="stat-label">Unlocked</span>
+                <span class="stat-value">${stats.achievements.totalUnlocked}/${stats.achievements.totalAvailable}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Progress</span>
+                <span class="stat-value">${stats.achievements.unlockedPercentage}%</span>
+              </div>
+              <div class="achievement-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: ${stats.achievements.unlockedPercentage}%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Difficulty & Category Breakdown -->
+        <div class="dashboard-section">
+          <h3>🎯 Performance by Difficulty & Category</h3>
+          <div class="breakdown-grid">
+            <div class="breakdown-card">
+              <h4>Difficulty Performance</h4>
+              ${this.renderDifficultyBreakdown(stats.difficultyStats)}
+            </div>
+            <div class="breakdown-card">
+              <h4>Category Performance</h4>
+              ${this.renderCategoryBreakdown(stats.categoryStats)}
+            </div>
+          </div>
+        </div>
+
+        <!-- Performance Insights -->
+        <div class="dashboard-section">
+          <h3>💡 Performance Insights</h3>
+          <div class="insights-container">
+            ${this.renderPerformanceInsights(stats.insights)}
+          </div>
+        </div>
+
+        <!-- Export Section -->
+        <div class="dashboard-section">
+          <h3>📤 Export Data</h3>
+          <div class="export-container">
+            <button class="btn btn-secondary" onclick="ui.exportStatistics('json')">
+              📄 Export as JSON
+            </button>
+            <button class="btn btn-secondary" onclick="ui.exportStatistics('csv')">
+              📊 Export as CSV
+            </button>
+            <button class="btn btn-secondary" onclick="ui.printStatistics()">
+              🖨️ Print Statistics
+            </button>
+          </div>
         </div>
       </div>
     `;
@@ -1090,6 +1151,190 @@ class GameUI {
     if (!dateString) return "";
     const date = new Date(dateString);
     return date.toLocaleDateString();
+  }
+
+  /**
+   * Renders win rate chart
+   * @param {Array} dailyData - Daily trend data
+   * @returns {string} - HTML for win rate chart
+   */
+  renderWinRateChart(dailyData) {
+    if (!dailyData || dailyData.length === 0) {
+      return '<div class="no-data">No data available for chart</div>';
+    }
+
+    const maxWinRate = Math.max(...dailyData.map(d => d.winRate));
+    const chartHeight = 120;
+    
+    return `
+      <div class="simple-chart">
+        <svg width="100%" height="${chartHeight}" viewBox="0 0 300 ${chartHeight}">
+          <polyline
+            fill="none"
+            stroke="#4CAF50"
+            stroke-width="2"
+            points="${dailyData.map((d, i) => 
+              `${(i / (dailyData.length - 1)) * 280},${chartHeight - (d.winRate / maxWinRate) * (chartHeight - 20) + 10}`
+            ).join(' ')}"
+          />
+          ${dailyData.map((d, i) => 
+            `<circle cx="${(i / (dailyData.length - 1)) * 280}" cy="${chartHeight - (d.winRate / maxWinRate) * (chartHeight - 20) + 10}" r="2" fill="#4CAF50" />`
+          ).join('')}
+        </svg>
+        <div class="chart-labels">
+          <span>0%</span>
+          <span>${maxWinRate}%</span>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Renders games daily chart
+   * @param {Array} dailyData - Daily trend data
+   * @returns {string} - HTML for games daily chart
+   */
+  renderGamesDailyChart(dailyData) {
+    if (!dailyData || dailyData.length === 0) {
+      return '<div class="no-data">No data available for chart</div>';
+    }
+
+    const maxGames = Math.max(...dailyData.map(d => d.gamesPlayed));
+    const chartHeight = 120;
+    
+    return `
+      <div class="simple-chart">
+        <svg width="100%" height="${chartHeight}" viewBox="0 0 300 ${chartHeight}">
+          ${dailyData.map((d, i) => {
+            const barHeight = (d.gamesPlayed / maxGames) * (chartHeight - 20);
+            return `<rect x="${(i / dailyData.length) * 280}" y="${chartHeight - barHeight + 10}" width="${280 / dailyData.length - 2}" height="${barHeight}" fill="#2196F3" />`;
+          }).join('')}
+        </svg>
+        <div class="chart-labels">
+          <span>0</span>
+          <span>${maxGames}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Renders difficulty breakdown
+   * @param {Object} difficultyStats - Difficulty statistics
+   * @returns {string} - HTML for difficulty breakdown
+   */
+  renderDifficultyBreakdown(difficultyStats) {
+    return Object.entries(difficultyStats)
+      .map(([difficulty, data]) => {
+        const winRate = data.played > 0 ? Math.round((data.won / data.played) * 100) : 0;
+        return `
+          <div class="breakdown-item">
+            <div class="breakdown-header">
+              <span class="breakdown-name">${difficulty.toUpperCase()}</span>
+              <span class="breakdown-value">${winRate}%</span>
+            </div>
+            <div class="breakdown-details">
+              <span>${data.played} games</span>
+              <span>${data.won} wins</span>
+              <span>${data.lost} losses</span>
+            </div>
+            <div class="breakdown-bar">
+              <div class="breakdown-fill" style="width: ${winRate}%"></div>
+            </div>
+          </div>
+        `;
+      })
+      .join('');
+  }
+
+  /**
+   * Renders category breakdown
+   * @param {Object} categoryStats - Category statistics
+   * @returns {string} - HTML for category breakdown
+   */
+  renderCategoryBreakdown(categoryStats) {
+    const sortedCategories = Object.entries(categoryStats)
+      .sort(([,a], [,b]) => b.played - a.played)
+      .slice(0, 5);
+
+    return sortedCategories
+      .map(([category, data]) => {
+        const winRate = data.played > 0 ? Math.round((data.won / data.played) * 100) : 0;
+        return `
+          <div class="breakdown-item">
+            <div class="breakdown-header">
+              <span class="breakdown-name">${category}</span>
+              <span class="breakdown-value">${winRate}%</span>
+            </div>
+            <div class="breakdown-details">
+              <span>${data.played} games</span>
+              <span>${data.won} wins</span>
+            </div>
+            <div class="breakdown-bar">
+              <div class="breakdown-fill" style="width: ${winRate}%"></div>
+            </div>
+          </div>
+        `;
+      })
+      .join('');
+  }
+
+  /**
+   * Renders performance insights
+   * @param {Object} insights - Performance insights
+   * @returns {string} - HTML for performance insights
+   */
+  renderPerformanceInsights(insights) {
+    return `
+      <div class="insights-grid">
+        <div class="insight-card strengths">
+          <h4>💪 Strengths</h4>
+          <ul>
+            ${insights.strengths.map(strength => `<li>${strength}</li>`).join('')}
+            ${insights.strengths.length === 0 ? '<li>Keep playing to discover your strengths!</li>' : ''}
+          </ul>
+        </div>
+        <div class="insight-card improvements">
+          <h4>🎯 Areas for Improvement</h4>
+          <ul>
+            ${insights.improvements.map(improvement => `<li>${improvement}</li>`).join('')}
+            ${insights.improvements.length === 0 ? '<li>Great job! Keep up the excellent work!</li>' : ''}
+          </ul>
+        </div>
+        <div class="insight-card recommendations">
+          <h4>💡 Recommendations</h4>
+          <ul>
+            ${insights.recommendations.map(recommendation => `<li>${recommendation}</li>`).join('')}
+            ${insights.recommendations.length === 0 ? '<li>Continue playing to get personalized recommendations!</li>' : ''}
+          </ul>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Formats consistency value
+   * @param {number} consistency - Consistency value
+   * @returns {string} - Formatted consistency
+   */
+  formatConsistency(consistency) {
+    if (consistency < 5000) return "Very Consistent";
+    if (consistency < 10000) return "Consistent";
+    if (consistency < 20000) return "Moderate";
+    return "Variable";
+  }
+
+  /**
+   * Formats improvement value
+   * @param {number} improvement - Improvement percentage
+   * @returns {string} - Formatted improvement
+   */
+  formatImprovement(improvement) {
+    if (improvement > 10) return `+${improvement}% Improving`;
+    if (improvement > 0) return `+${improvement}% Slight Improvement`;
+    if (improvement === 0) return "Stable";
+    if (improvement > -10) return `${improvement}% Slight Decline`;
+    return `${improvement}% Declining`;
   }
 
   /**

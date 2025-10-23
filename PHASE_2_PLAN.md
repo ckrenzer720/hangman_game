@@ -92,7 +92,7 @@ Phase 2 focuses on enhancing the core hangman game with advanced features, impro
   - Animation preferences
   - Reset statistics option
 
-- [ ] **Statistics Dashboard**
+- [x] **Statistics Dashboard**
 
   - Detailed game statistics
   - Performance graphs
