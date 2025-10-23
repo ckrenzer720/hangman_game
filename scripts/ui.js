@@ -802,7 +802,9 @@ class GameUI {
               </div>
               <div class="stat-item">
                 <span class="stat-label">Longest Loss Streak</span>
-                <span class="stat-value">${stats.streaks.longestLossStreak}</span>
+                <span class="stat-value">${
+                  stats.streaks.longestLossStreak
+                }</span>
               </div>
             </div>
 
@@ -810,19 +812,27 @@ class GameUI {
               <h4>Time Performance</h4>
               <div class="stat-item">
                 <span class="stat-label">Fastest Time</span>
-                <span class="stat-value">${this.formatTime(stats.fastestCompletionTime)}</span>
+                <span class="stat-value">${this.formatTime(
+                  stats.fastestCompletionTime
+                )}</span>
               </div>
               <div class="stat-item">
                 <span class="stat-label">Average Time</span>
-                <span class="stat-value">${this.formatTime(stats.averagePlayTime)}</span>
+                <span class="stat-value">${this.formatTime(
+                  stats.averagePlayTime
+                )}</span>
               </div>
               <div class="stat-item">
                 <span class="stat-label">Total Time</span>
-                <span class="stat-value">${this.formatTime(stats.totalPlayTime)}</span>
+                <span class="stat-value">${this.formatTime(
+                  stats.totalPlayTime
+                )}</span>
               </div>
               <div class="stat-item">
                 <span class="stat-label">Last Played</span>
-                <span class="stat-value">${this.formatDate(stats.lastPlayed)}</span>
+                <span class="stat-value">${this.formatDate(
+                  stats.lastPlayed
+                )}</span>
               </div>
             </div>
 
@@ -830,19 +840,27 @@ class GameUI {
               <h4>Accuracy & Efficiency</h4>
               <div class="stat-item">
                 <span class="stat-label">Guess Accuracy</span>
-                <span class="stat-value">${stats.performanceMetrics.accuracy}%</span>
+                <span class="stat-value">${
+                  stats.performanceMetrics.accuracy
+                }%</span>
               </div>
               <div class="stat-item">
                 <span class="stat-label">Score Efficiency</span>
-                <span class="stat-value">${stats.performanceMetrics.efficiency}/min</span>
+                <span class="stat-value">${
+                  stats.performanceMetrics.efficiency
+                }/min</span>
               </div>
               <div class="stat-item">
                 <span class="stat-label">Consistency</span>
-                <span class="stat-value">${this.formatConsistency(stats.performanceMetrics.consistency)}</span>
+                <span class="stat-value">${this.formatConsistency(
+                  stats.performanceMetrics.consistency
+                )}</span>
               </div>
               <div class="stat-item">
                 <span class="stat-label">Improvement</span>
-                <span class="stat-value">${this.formatImprovement(stats.performanceMetrics.improvement)}</span>
+                <span class="stat-value">${this.formatImprovement(
+                  stats.performanceMetrics.improvement
+                )}</span>
               </div>
             </div>
 
@@ -850,15 +868,21 @@ class GameUI {
               <h4>Achievements</h4>
               <div class="stat-item">
                 <span class="stat-label">Unlocked</span>
-                <span class="stat-value">${stats.achievements.totalUnlocked}/${stats.achievements.totalAvailable}</span>
+                <span class="stat-value">${stats.achievements.totalUnlocked}/${
+      stats.achievements.totalAvailable
+    }</span>
               </div>
               <div class="stat-item">
                 <span class="stat-label">Progress</span>
-                <span class="stat-value">${stats.achievements.unlockedPercentage}%</span>
+                <span class="stat-value">${
+                  stats.achievements.unlockedPercentage
+                }%</span>
               </div>
               <div class="achievement-progress">
                 <div class="progress-bar">
-                  <div class="progress-fill" style="width: ${stats.achievements.unlockedPercentage}%"></div>
+                  <div class="progress-fill" style="width: ${
+                    stats.achievements.unlockedPercentage
+                  }%"></div>
                 </div>
               </div>
             </div>
@@ -1163,9 +1187,9 @@ class GameUI {
       return '<div class="no-data">No data available for chart</div>';
     }
 
-    const maxWinRate = Math.max(...dailyData.map(d => d.winRate));
+    const maxWinRate = Math.max(...dailyData.map((d) => d.winRate));
     const chartHeight = 120;
-    
+
     return `
       <div class="simple-chart">
         <svg width="100%" height="${chartHeight}" viewBox="0 0 300 ${chartHeight}">
@@ -1173,13 +1197,27 @@ class GameUI {
             fill="none"
             stroke="#4CAF50"
             stroke-width="2"
-            points="${dailyData.map((d, i) => 
-              `${(i / (dailyData.length - 1)) * 280},${chartHeight - (d.winRate / maxWinRate) * (chartHeight - 20) + 10}`
-            ).join(' ')}"
+            points="${dailyData
+              .map(
+                (d, i) =>
+                  `${(i / (dailyData.length - 1)) * 280},${
+                    chartHeight -
+                    (d.winRate / maxWinRate) * (chartHeight - 20) +
+                    10
+                  }`
+              )
+              .join(" ")}"
           />
-          ${dailyData.map((d, i) => 
-            `<circle cx="${(i / (dailyData.length - 1)) * 280}" cy="${chartHeight - (d.winRate / maxWinRate) * (chartHeight - 20) + 10}" r="2" fill="#4CAF50" />`
-          ).join('')}
+          ${dailyData
+            .map(
+              (d, i) =>
+                `<circle cx="${(i / (dailyData.length - 1)) * 280}" cy="${
+                  chartHeight -
+                  (d.winRate / maxWinRate) * (chartHeight - 20) +
+                  10
+                }" r="2" fill="#4CAF50" />`
+            )
+            .join("")}
         </svg>
         <div class="chart-labels">
           <span>0%</span>
@@ -1199,16 +1237,22 @@ class GameUI {
       return '<div class="no-data">No data available for chart</div>';
     }
 
-    const maxGames = Math.max(...dailyData.map(d => d.gamesPlayed));
+    const maxGames = Math.max(...dailyData.map((d) => d.gamesPlayed));
     const chartHeight = 120;
-    
+
     return `
       <div class="simple-chart">
         <svg width="100%" height="${chartHeight}" viewBox="0 0 300 ${chartHeight}">
-          ${dailyData.map((d, i) => {
-            const barHeight = (d.gamesPlayed / maxGames) * (chartHeight - 20);
-            return `<rect x="${(i / dailyData.length) * 280}" y="${chartHeight - barHeight + 10}" width="${280 / dailyData.length - 2}" height="${barHeight}" fill="#2196F3" />`;
-          }).join('')}
+          ${dailyData
+            .map((d, i) => {
+              const barHeight = (d.gamesPlayed / maxGames) * (chartHeight - 20);
+              return `<rect x="${(i / dailyData.length) * 280}" y="${
+                chartHeight - barHeight + 10
+              }" width="${
+                280 / dailyData.length - 2
+              }" height="${barHeight}" fill="#2196F3" />`;
+            })
+            .join("")}
         </svg>
         <div class="chart-labels">
           <span>0</span>
@@ -1226,7 +1270,8 @@ class GameUI {
   renderDifficultyBreakdown(difficultyStats) {
     return Object.entries(difficultyStats)
       .map(([difficulty, data]) => {
-        const winRate = data.played > 0 ? Math.round((data.won / data.played) * 100) : 0;
+        const winRate =
+          data.played > 0 ? Math.round((data.won / data.played) * 100) : 0;
         return `
           <div class="breakdown-item">
             <div class="breakdown-header">
@@ -1244,7 +1289,7 @@ class GameUI {
           </div>
         `;
       })
-      .join('');
+      .join("");
   }
 
   /**
@@ -1254,12 +1299,13 @@ class GameUI {
    */
   renderCategoryBreakdown(categoryStats) {
     const sortedCategories = Object.entries(categoryStats)
-      .sort(([,a], [,b]) => b.played - a.played)
+      .sort(([, a], [, b]) => b.played - a.played)
       .slice(0, 5);
 
     return sortedCategories
       .map(([category, data]) => {
-        const winRate = data.played > 0 ? Math.round((data.won / data.played) * 100) : 0;
+        const winRate =
+          data.played > 0 ? Math.round((data.won / data.played) * 100) : 0;
         return `
           <div class="breakdown-item">
             <div class="breakdown-header">
@@ -1276,7 +1322,7 @@ class GameUI {
           </div>
         `;
       })
-      .join('');
+      .join("");
   }
 
   /**
@@ -1290,22 +1336,40 @@ class GameUI {
         <div class="insight-card strengths">
           <h4>💪 Strengths</h4>
           <ul>
-            ${insights.strengths.map(strength => `<li>${strength}</li>`).join('')}
-            ${insights.strengths.length === 0 ? '<li>Keep playing to discover your strengths!</li>' : ''}
+            ${insights.strengths
+              .map((strength) => `<li>${strength}</li>`)
+              .join("")}
+            ${
+              insights.strengths.length === 0
+                ? "<li>Keep playing to discover your strengths!</li>"
+                : ""
+            }
           </ul>
         </div>
         <div class="insight-card improvements">
           <h4>🎯 Areas for Improvement</h4>
           <ul>
-            ${insights.improvements.map(improvement => `<li>${improvement}</li>`).join('')}
-            ${insights.improvements.length === 0 ? '<li>Great job! Keep up the excellent work!</li>' : ''}
+            ${insights.improvements
+              .map((improvement) => `<li>${improvement}</li>`)
+              .join("")}
+            ${
+              insights.improvements.length === 0
+                ? "<li>Great job! Keep up the excellent work!</li>"
+                : ""
+            }
           </ul>
         </div>
         <div class="insight-card recommendations">
           <h4>💡 Recommendations</h4>
           <ul>
-            ${insights.recommendations.map(recommendation => `<li>${recommendation}</li>`).join('')}
-            ${insights.recommendations.length === 0 ? '<li>Continue playing to get personalized recommendations!</li>' : ''}
+            ${insights.recommendations
+              .map((recommendation) => `<li>${recommendation}</li>`)
+              .join("")}
+            ${
+              insights.recommendations.length === 0
+                ? "<li>Continue playing to get personalized recommendations!</li>"
+                : ""
+            }
           </ul>
         </div>
       </div>
