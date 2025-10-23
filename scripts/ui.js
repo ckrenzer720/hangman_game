@@ -83,10 +83,15 @@ class GameUI {
       statisticsBtn.addEventListener("click", () => this.showStatistics());
     }
 
-    // Close Statistics Button
+    // Close Statistics Buttons
     const closeStatsBtn = document.getElementById("close-statistics");
     if (closeStatsBtn) {
       closeStatsBtn.addEventListener("click", () => this.hideStatistics());
+    }
+
+    const closeStatsBtn2 = document.getElementById("close-statistics-2");
+    if (closeStatsBtn2) {
+      closeStatsBtn2.addEventListener("click", () => this.hideStatistics());
     }
 
     // Reset Statistics Button
@@ -982,8 +987,206 @@ class GameUI {
     ) {
       this.game.resetStatistics();
       this.game.resetAchievements();
-      this.populateStatistics();
+      this.populateStatisticsDashboard();
       this.showFeedback("success", "Statistics have been reset!");
+    }
+  }
+
+  /**
+   * Exports statistics in specified format
+   * @param {string} format - Export format ('json' or 'csv')
+   */
+  exportStatistics(format) {
+    try {
+      let data, filename, mimeType;
+
+      if (format === "json") {
+        data = this.game.exportStatistics();
+        filename = `hangman-statistics-${
+          new Date().toISOString().split("T")[0]
+        }.json`;
+        mimeType = "application/json";
+      } else if (format === "csv") {
+        data = this.game.exportStatisticsCSV();
+        filename = `hangman-game-history-${
+          new Date().toISOString().split("T")[0]
+        }.csv`;
+        mimeType = "text/csv";
+      } else {
+        this.showFeedback("error", "Invalid export format");
+        return;
+      }
+
+      // Create and download file
+      const blob = new Blob([data], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      this.showFeedback(
+        "success",
+        `Statistics exported as ${format.toUpperCase()}`
+      );
+    } catch (error) {
+      console.error("Error exporting statistics:", error);
+      this.showFeedback("error", "Failed to export statistics");
+    }
+  }
+
+  /**
+   * Prints statistics
+   */
+  printStatistics() {
+    try {
+      const stats = this.game.getDashboardStatistics();
+      const printWindow = window.open("", "_blank");
+
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Hangman Game Statistics</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .section { margin-bottom: 25px; }
+            .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+            .stat-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; }
+            .chart-placeholder { background: #f5f5f5; padding: 20px; text-align: center; margin: 10px 0; }
+            @media print { .no-print { display: none; } }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>📊 Hangman Game Statistics</h1>
+            <p>Generated on ${new Date().toLocaleDateString()}</p>
+          </div>
+          
+          <div class="section">
+            <h2>Key Metrics</h2>
+            <div class="stat-grid">
+              <div class="stat-item">
+                <span>Games Played:</span>
+                <span>${stats.gamesPlayed}</span>
+              </div>
+              <div class="stat-item">
+                <span>Win Rate:</span>
+                <span>${stats.winPercentage}%</span>
+              </div>
+              <div class="stat-item">
+                <span>Current Streak:</span>
+                <span>${stats.streaks.current}</span>
+              </div>
+              <div class="stat-item">
+                <span>Best Streak:</span>
+                <span>${stats.streaks.best}</span>
+              </div>
+              <div class="stat-item">
+                <span>Total Score:</span>
+                <span>${this.game.gameState.score}</span>
+              </div>
+              <div class="stat-item">
+                <span>Fastest Time:</span>
+                <span>${this.formatTime(stats.fastestCompletionTime)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2>Performance Metrics</h2>
+            <div class="stat-grid">
+              <div class="stat-item">
+                <span>Guess Accuracy:</span>
+                <span>${stats.performanceMetrics.accuracy}%</span>
+              </div>
+              <div class="stat-item">
+                <span>Score Efficiency:</span>
+                <span>${stats.performanceMetrics.efficiency}/min</span>
+              </div>
+              <div class="stat-item">
+                <span>Consistency:</span>
+                <span>${this.formatConsistency(
+                  stats.performanceMetrics.consistency
+                )}</span>
+              </div>
+              <div class="stat-item">
+                <span>Improvement:</span>
+                <span>${this.formatImprovement(
+                  stats.performanceMetrics.improvement
+                )}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2>Achievements</h2>
+            <div class="stat-item">
+              <span>Unlocked:</span>
+              <span>${stats.achievements.totalUnlocked}/${
+        stats.achievements.totalAvailable
+      } (${stats.achievements.unlockedPercentage}%)</span>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2>Difficulty Performance</h2>
+            ${Object.entries(stats.difficultyStats)
+              .map(([difficulty, data]) => {
+                const winRate =
+                  data.played > 0
+                    ? Math.round((data.won / data.played) * 100)
+                    : 0;
+                return `
+                <div class="stat-item">
+                  <span>${difficulty.toUpperCase()}:</span>
+                  <span>${data.played} games, ${winRate}% win rate</span>
+                </div>
+              `;
+              })
+              .join("")}
+          </div>
+
+          <div class="section">
+            <h2>Category Performance</h2>
+            ${Object.entries(stats.categoryStats)
+              .sort(([, a], [, b]) => b.played - a.played)
+              .slice(0, 5)
+              .map(([category, data]) => {
+                const winRate =
+                  data.played > 0
+                    ? Math.round((data.won / data.played) * 100)
+                    : 0;
+                return `
+                  <div class="stat-item">
+                    <span>${category}:</span>
+                    <span>${data.played} games, ${winRate}% win rate</span>
+                  </div>
+                `;
+              })
+              .join("")}
+          </div>
+
+          <div class="section no-print">
+            <p><em>This report was generated by the Hangman Game Statistics Dashboard.</em></p>
+          </div>
+        </body>
+        </html>
+      `);
+
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+
+      this.showFeedback("success", "Statistics sent to printer");
+    } catch (error) {
+      console.error("Error printing statistics:", error);
+      this.showFeedback("error", "Failed to print statistics");
     }
   }
 

@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="styles/main.css" />
     <link rel="stylesheet" href="styles/components.css" />
     <link rel="stylesheet" href="styles/responsive.css" />
+    <link rel="stylesheet" href="styles/dashboard.css" />
   </head>
   <body>
     <div class="game-container">
@@ -120,14 +121,19 @@
       </div>
 
       <div class="statistics-modal" id="statistics-modal">
-        <div class="modal-content">
-          <h2>Game Statistics</h2>
+        <div class="modal-content statistics-modal-content">
+          <div class="modal-header">
+            <h2>📊 Statistics Dashboard</h2>
+            <button class="btn btn-close" id="close-statistics">✕</button>
+          </div>
           <div class="statistics-content" id="statistics-content">
             <!-- Statistics will be populated here -->
           </div>
           <div class="modal-actions">
-            <button class="btn" id="reset-statistics">Reset Statistics</button>
-            <button class="btn" id="close-statistics">Close</button>
+            <button class="btn btn-danger" id="reset-statistics">
+              Reset Statistics
+            </button>
+            <button class="btn" id="close-statistics-2">Close</button>
           </div>
         </div>
       </div>
