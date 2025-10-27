@@ -53,6 +53,12 @@ class GameUI {
       hintBtn.addEventListener("click", () => this.game.getHint());
     }
 
+    // Help Button
+    const helpBtn = document.getElementById("help");
+    if (helpBtn) {
+      helpBtn.addEventListener("click", () => this.showHelp());
+    }
+
     // Pause/Resume Button
     const pauseResumeBtn = document.getElementById("pause-resume");
     if (pauseResumeBtn) {
@@ -132,6 +138,12 @@ class GameUI {
       resetSettingsBtn.addEventListener("click", () => this.resetSettings());
     }
 
+    // Help Button handlers
+    const closeHelpBtn = document.getElementById("close-help");
+    if (closeHelpBtn) {
+      closeHelpBtn.addEventListener("click", () => this.hideHelp());
+    }
+
     // Virtual Keyboard
     const keyboard = document.getElementById("keyboard");
     if (keyboard) {
@@ -171,6 +183,16 @@ class GameUI {
       settingsModal.addEventListener("click", (e) => {
         if (e.target === settingsModal) {
           this.hideSettings();
+        }
+      });
+    }
+
+    // Help modal close on background click
+    const helpModal = document.getElementById("help-modal");
+    if (helpModal) {
+      helpModal.addEventListener("click", (e) => {
+        if (e.target === helpModal) {
+          this.hideHelp();
         }
       });
     }
@@ -1638,6 +1660,37 @@ class GameUI {
    */
   hideSettings() {
     const modal = document.getElementById("settings-modal");
+    if (modal) {
+      modal.classList.remove("show");
+      document.body.style.overflow = "";
+    }
+  }
+
+  /**
+   * Shows the help modal
+   */
+  showHelp() {
+    const modal = document.getElementById("help-modal");
+    const content = document.getElementById("help-content");
+
+    if (!modal || !content) return;
+
+    // Initialize help system if not already done
+    if (!window.helpSystem) {
+      window.helpSystem = new HelpSystem();
+      window.helpSystem.initialize();
+    }
+
+    // Show modal
+    modal.classList.add("show");
+    document.body.style.overflow = "hidden";
+  }
+
+  /**
+   * Hides the help modal
+   */
+  hideHelp() {
+    const modal = document.getElementById("help-modal");
     if (modal) {
       modal.classList.remove("show");
       document.body.style.overflow = "";
