@@ -17,6 +17,11 @@ class HangmanGame {
       category: "animals",
       gameStartTime: null,
       gameEndTime: null,
+      // Timed mode configuration
+      timedMode: false,
+      timeLimit: 60000, // 60 seconds default
+      timeRemaining: 60000,
+      bestTimes: {},
     };
 
     // Initialize error middleware (will be set by main.js)
@@ -56,6 +61,9 @@ class HangmanGame {
       "left-leg",
       "right-leg",
     ];
+
+    // Timer for timed mode
+    this.timerInterval = null;
 
     this.loadWords();
     this.applySettingsFromThemeManager();
@@ -312,6 +320,12 @@ class HangmanGame {
     this.createHiddenWord();
     this.updateDisplay();
     this.startGameTimer();
+
+    // Start countdown timer if timed mode is enabled
+    if (this.gameState.timedMode) {
+      this.gameState.timeRemaining = this.gameState.timeLimit;
+      this.startCountdownTimer();
+    }
   }
 
   selectRandomWord() {
@@ -426,9 +440,19 @@ class HangmanGame {
     if (hiddenLetters === currentLetters) {
       this.gameState.gameStatus = "won";
 
+      // Stop countdown timer
+      this.stopCountdownTimer();
+
       // Calculate score based on difficulty and performance
       const baseScore = this.calculateScore();
       this.gameState.score += baseScore;
+
+      // Record best time in timed mode
+      if (this.gameState.timedMode) {
+        const timeUsed =
+          this.gameState.timeLimit - this.gameState.timeRemaining;
+        this.recordBestTime(timeUsed);
+      }
 
       // Update score display
       if (window.ui && window.ui.updateScoreDisplay) {
@@ -532,6 +556,9 @@ class HangmanGame {
   }
 
   resetGame() {
+    // Stop countdown timer
+    this.stopCountdownTimer();
+
     this.gameState = {
       currentWord: "",
       hiddenWord: "",
@@ -545,6 +572,13 @@ class HangmanGame {
       category: this.gameState.category,
       gameStartTime: null,
       gameEndTime: null,
+      // Preserve timed mode settings
+      timedMode: this.gameState.timedMode,
+      timeLimit: this.gameState.timeLimit,
+      timeRemaining: this.gameState.timedMode
+        ? this.gameState.timeLimit
+        : 60000,
+      bestTimes: this.gameState.bestTimes,
     };
 
     // Reset hangman figure
@@ -756,9 +790,16 @@ class HangmanGame {
     const maxGuesses = this.gameState.maxIncorrectGuesses;
     const efficiencyBonus = Math.max(0, (maxGuesses - incorrectGuesses) * 10);
 
-    // Time bonus (faster completion = more points)
-    const playTime = this.endGameTimer();
-    const timeBonus = Math.max(0, Math.floor((30000 - playTime) / 1000) * 2); // 2 points per second under 30 seconds
+    let timeBonus = 0;
+
+    // Time-based scoring for timed mode
+    if (this.gameState.timedMode) {
+      timeBonus = this.calculateTimeBonus();
+    } else {
+      // Regular time bonus (faster completion = more points)
+      const playTime = this.endGameTimer();
+      timeBonus = Math.max(0, Math.floor((30000 - playTime) / 1000) * 2);
+    }
 
     const totalScore =
       (baseScore + efficiencyBonus + timeBonus) * difficultyMultiplier;
@@ -1046,9 +1087,30 @@ class HangmanGame {
       totalPlayTime: 0,
       averagePlayTime: 0,
       difficultyStats: {
-        easy: { played: 0, won: 0, lost: 0, totalTime: 0, averageTime: 0, bestTime: null },
-        medium: { played: 0, won: 0, lost: 0, totalTime: 0, averageTime: 0, bestTime: null },
-        hard: { played: 0, won: 0, lost: 0, totalTime: 0, averageTime: 0, bestTime: null },
+        easy: {
+          played: 0,
+          won: 0,
+          lost: 0,
+          totalTime: 0,
+          averageTime: 0,
+          bestTime: null,
+        },
+        medium: {
+          played: 0,
+          won: 0,
+          lost: 0,
+          totalTime: 0,
+          averageTime: 0,
+          bestTime: null,
+        },
+        hard: {
+          played: 0,
+          won: 0,
+          lost: 0,
+          totalTime: 0,
+          averageTime: 0,
+          bestTime: null,
+        },
       },
       categoryStats: {},
       lastPlayed: null,
@@ -1110,14 +1172,234 @@ class HangmanGame {
     return this.gameState.gameEndTime - this.gameState.gameStartTime;
   }
 
+  // ========================================
+  // TIMED MODE SYSTEM
+  // ========================================
+
+  /**
+   * Enables timed mode
+   * @param {number} timeLimit - Time limit in milliseconds
+   */
+  enableTimedMode(timeLimit = 60000) {
+    this.gameState.timedMode = true;
+    this.gameState.timeLimit = timeLimit;
+    this.gameState.timeRemaining = timeLimit;
+
+    // Clear any existing timer
+    this.stopCountdownTimer();
+  }
+
+  /**
+   * Disables timed mode
+   */
+  disableTimedMode() {
+    this.gameState.timedMode = false;
+    this.stopCountdownTimer();
+  }
+
+  /**
+   * Starts the countdown timer
+   */
+  startCountdownTimer() {
+    if (!this.gameState.timedMode) return;
+
+    // Clear any existing timer
+    this.stopCountdownTimer();
+
+    this.timerInterval = setInterval(() => {
+      this.updateCountdownTimer();
+    }, 100);
+  }
+
+  /**
+   * Stops the countdown timer
+   */
+  stopCountdownTimer() {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
+  }
+
+  /**
+   * Updates the countdown timer
+   */
+  updateCountdownTimer() {
+    if (!this.gameState.timedMode) {
+      this.stopCountdownTimer();
+      return;
+    }
+
+    // Only count down when playing and not paused
+    if (this.gameState.gameStatus === "playing" && !this.gameState.isPaused) {
+      this.gameState.timeRemaining -= 100;
+
+      // Update timer display
+      if (window.ui && window.ui.updateTimerDisplay) {
+        window.ui.updateTimerDisplay();
+      }
+
+      // Apply time pressure visual effects
+      this.applyTimePressureEffects();
+
+      // Check if time has run out
+      if (this.gameState.timeRemaining <= 0) {
+        this.gameState.timeRemaining = 0;
+        this.handleTimeUp();
+      }
+    }
+  }
+
+  /**
+   * Applies visual pressure effects when time is running low
+   */
+  applyTimePressureEffects() {
+    const percentage = this.gameState.timeRemaining / this.gameState.timeLimit;
+    const timerElement = document.getElementById("timer-display");
+
+    if (timerElement) {
+      // Add warning styles when time is running low
+      if (percentage <= 0.2) {
+        timerElement.classList.add("critical-time");
+        if (percentage <= 0.1) {
+          timerElement.classList.add("very-critical-time");
+          // Add pulsing animation
+          timerElement.classList.add("pulse");
+        } else {
+          timerElement.classList.remove("very-critical-time");
+        }
+      } else if (percentage <= 0.5) {
+        timerElement.classList.add("warning-time");
+        timerElement.classList.remove("critical-time", "very-critical-time");
+      } else {
+        timerElement.classList.remove(
+          "warning-time",
+          "critical-time",
+          "very-critical-time"
+        );
+      }
+    }
+
+    // Add urgency to the word display
+    const wordDisplay = document.getElementById("word-display");
+    if (wordDisplay && percentage <= 0.2) {
+      wordDisplay.classList.add("time-pressure");
+    } else if (wordDisplay) {
+      wordDisplay.classList.remove("time-pressure");
+    }
+  }
+
+  /**
+   * Handles when the time runs out
+   */
+  handleTimeUp() {
+    this.stopCountdownTimer();
+    this.gameState.gameStatus = "lost";
+    this.gameState.isPaused = false;
+
+    // Show time up message
+    if (window.ui) {
+      window.ui.showFeedback(
+        "error",
+        "⏰ Time's Up! The word was hidden too long."
+      );
+      this.showGameOverModal("Time's Up!", this.gameState.currentWord);
+    }
+
+    // Update statistics
+    this.updateStatistics("lost");
+  }
+
+  /**
+   * Calculates time bonus for scoring
+   * @returns {number} - Time bonus points
+   */
+  calculateTimeBonus() {
+    if (!this.gameState.timedMode) return 0;
+
+    const percentageRemaining =
+      this.gameState.timeRemaining / this.gameState.timeLimit;
+
+    // Bonus based on how much time is left
+    // 50 points if you finish with 50% time remaining
+    // 100 points if you finish with 100% time remaining
+    const timeBonus = Math.round(percentageRemaining * 100);
+
+    return timeBonus;
+  }
+
+  /**
+   * Records best time for a difficulty/category combination
+   * @param {number} completionTime - Time taken to complete the game
+   */
+  recordBestTime(completionTime) {
+    if (!this.gameState.timedMode) return;
+
+    const key = `${this.gameState.difficulty}-${this.gameState.category}`;
+
+    if (
+      !this.gameState.bestTimes[key] ||
+      completionTime < this.gameState.bestTimes[key]
+    ) {
+      this.gameState.bestTimes[key] = completionTime;
+      this.saveBestTimes();
+
+      if (window.ui) {
+        window.ui.showFeedback("success", "🎉 New Best Time Record!");
+      }
+    }
+  }
+
+  /**
+   * Gets best time for current difficulty/category
+   * @returns {number|null} - Best time in milliseconds or null
+   */
+  getBestTime() {
+    if (!this.gameState.timedMode) return null;
+
+    const key = `${this.gameState.difficulty}-${this.gameState.category}`;
+    return this.gameState.bestTimes[key] || null;
+  }
+
+  /**
+   * Saves best times to localStorage
+   */
+  saveBestTimes() {
+    if (!GameUtils.isLocalStorageAvailable()) return;
+
+    try {
+      localStorage.setItem(
+        "hangmanBestTimes",
+        JSON.stringify(this.gameState.bestTimes)
+      );
+    } catch (error) {
+      console.warn("Error saving best times:", error);
+    }
+  }
+
+  /**
+   * Loads best times from localStorage
+   */
+  loadBestTimes() {
+    if (!GameUtils.isLocalStorageAvailable()) return {};
+
+    try {
+      const saved = localStorage.getItem("hangmanBestTimes");
+      return saved ? JSON.parse(saved) : {};
+    } catch (error) {
+      console.warn("Error loading best times:", error);
+      return {};
+    }
+  }
+
   updateStatistics(gameResult) {
     const playTime = this.endGameTimer();
     const totalGuesses = this.gameState.guessedLetters.length;
-    const correctGuesses = this.gameState.guessedLetters.filter(letter => 
+    const correctGuesses = this.gameState.guessedLetters.filter((letter) =>
       this.gameState.currentWord.includes(letter)
     ).length;
     const currentDate = new Date();
-    const dateKey = currentDate.toISOString().split('T')[0];
+    const dateKey = currentDate.toISOString().split("T")[0];
     const weekKey = this.getWeekKey(currentDate);
     const monthKey = currentDate.toISOString().substring(0, 7);
 
@@ -1205,15 +1487,20 @@ class HangmanGame {
     const difficulty = this.gameState.difficulty;
     this.statistics.difficultyStats[difficulty].played++;
     this.statistics.difficultyStats[difficulty].totalTime += playTime;
-    this.statistics.difficultyStats[difficulty].averageTime = 
+    this.statistics.difficultyStats[difficulty].averageTime =
       this.statistics.difficultyStats[difficulty].played > 0
-        ? Math.round(this.statistics.difficultyStats[difficulty].totalTime / this.statistics.difficultyStats[difficulty].played)
+        ? Math.round(
+            this.statistics.difficultyStats[difficulty].totalTime /
+              this.statistics.difficultyStats[difficulty].played
+          )
         : 0;
-    
+
     if (gameResult === "won") {
       this.statistics.difficultyStats[difficulty].won++;
-      if (!this.statistics.difficultyStats[difficulty].bestTime || 
-          playTime < this.statistics.difficultyStats[difficulty].bestTime) {
+      if (
+        !this.statistics.difficultyStats[difficulty].bestTime ||
+        playTime < this.statistics.difficultyStats[difficulty].bestTime
+      ) {
         this.statistics.difficultyStats[difficulty].bestTime = playTime;
       }
     } else if (gameResult === "lost") {
@@ -1223,26 +1510,31 @@ class HangmanGame {
     // Update category statistics
     const category = this.gameState.category;
     if (!this.statistics.categoryStats[category]) {
-      this.statistics.categoryStats[category] = { 
-        played: 0, 
-        won: 0, 
-        lost: 0, 
-        totalTime: 0, 
-        averageTime: 0, 
-        bestTime: null 
+      this.statistics.categoryStats[category] = {
+        played: 0,
+        won: 0,
+        lost: 0,
+        totalTime: 0,
+        averageTime: 0,
+        bestTime: null,
       };
     }
     this.statistics.categoryStats[category].played++;
     this.statistics.categoryStats[category].totalTime += playTime;
-    this.statistics.categoryStats[category].averageTime = 
+    this.statistics.categoryStats[category].averageTime =
       this.statistics.categoryStats[category].played > 0
-        ? Math.round(this.statistics.categoryStats[category].totalTime / this.statistics.categoryStats[category].played)
+        ? Math.round(
+            this.statistics.categoryStats[category].totalTime /
+              this.statistics.categoryStats[category].played
+          )
         : 0;
-    
+
     if (gameResult === "won") {
       this.statistics.categoryStats[category].won++;
-      if (!this.statistics.categoryStats[category].bestTime || 
-          playTime < this.statistics.categoryStats[category].bestTime) {
+      if (
+        !this.statistics.categoryStats[category].bestTime ||
+        playTime < this.statistics.categoryStats[category].bestTime
+      ) {
         this.statistics.categoryStats[category].bestTime = playTime;
       }
     } else if (gameResult === "lost") {
@@ -1263,9 +1555,11 @@ class HangmanGame {
     this.statistics.dailyStats[dateKey].gamesPlayed++;
     this.statistics.dailyStats[dateKey].totalTime += playTime;
     this.statistics.dailyStats[dateKey].totalScore += this.gameState.score;
-    this.statistics.dailyStats[dateKey].averageTime = 
-      Math.round(this.statistics.dailyStats[dateKey].totalTime / this.statistics.dailyStats[dateKey].gamesPlayed);
-    
+    this.statistics.dailyStats[dateKey].averageTime = Math.round(
+      this.statistics.dailyStats[dateKey].totalTime /
+        this.statistics.dailyStats[dateKey].gamesPlayed
+    );
+
     if (gameResult === "won") {
       this.statistics.dailyStats[dateKey].gamesWon++;
     } else {
@@ -1295,7 +1589,7 @@ class HangmanGame {
   getWeekKey(date) {
     const year = date.getFullYear();
     const week = this.getWeekNumber(date);
-    return `${year}-W${week.toString().padStart(2, '0')}`;
+    return `${year}-W${week.toString().padStart(2, "0")}`;
   }
 
   /**
@@ -1317,40 +1611,57 @@ class HangmanGame {
 
     // Calculate accuracy (percentage of correct guesses)
     const totalGuesses = this.statistics.totalGuesses;
-    const correctGuesses = this.statistics.gameHistory.reduce((sum, game) => sum + game.correctGuesses, 0);
-    this.statistics.performanceMetrics.accuracy = totalGuesses > 0 
-      ? Math.round((correctGuesses / totalGuesses) * 100) 
-      : 0;
+    const correctGuesses = this.statistics.gameHistory.reduce(
+      (sum, game) => sum + game.correctGuesses,
+      0
+    );
+    this.statistics.performanceMetrics.accuracy =
+      totalGuesses > 0 ? Math.round((correctGuesses / totalGuesses) * 100) : 0;
 
     // Calculate efficiency (score per minute)
-    const totalScore = this.statistics.gameHistory.reduce((sum, game) => sum + game.score, 0);
+    const totalScore = this.statistics.gameHistory.reduce(
+      (sum, game) => sum + game.score,
+      0
+    );
     const totalMinutes = this.statistics.totalPlayTime / 60000;
-    this.statistics.performanceMetrics.efficiency = totalMinutes > 0 
-      ? Math.round(totalScore / totalMinutes) 
-      : 0;
+    this.statistics.performanceMetrics.efficiency =
+      totalMinutes > 0 ? Math.round(totalScore / totalMinutes) : 0;
 
     // Calculate consistency (standard deviation of completion times)
     const completionTimes = this.statistics.gameHistory
-      .filter(game => game.result === 'won')
-      .map(game => game.playTime);
-    
+      .filter((game) => game.result === "won")
+      .map((game) => game.playTime);
+
     if (completionTimes.length > 1) {
-      const mean = completionTimes.reduce((sum, time) => sum + time, 0) / completionTimes.length;
-      const variance = completionTimes.reduce((sum, time) => sum + Math.pow(time - mean, 2), 0) / completionTimes.length;
-      this.statistics.performanceMetrics.consistency = Math.round(Math.sqrt(variance));
+      const mean =
+        completionTimes.reduce((sum, time) => sum + time, 0) /
+        completionTimes.length;
+      const variance =
+        completionTimes.reduce(
+          (sum, time) => sum + Math.pow(time - mean, 2),
+          0
+        ) / completionTimes.length;
+      this.statistics.performanceMetrics.consistency = Math.round(
+        Math.sqrt(variance)
+      );
     }
 
     // Calculate improvement trend (comparing recent vs older games)
     if (this.statistics.gameHistory.length >= 10) {
       const recentGames = this.statistics.gameHistory.slice(-5);
       const olderGames = this.statistics.gameHistory.slice(-10, -5);
-      
-      const recentAvgTime = recentGames.reduce((sum, game) => sum + game.playTime, 0) / recentGames.length;
-      const olderAvgTime = olderGames.reduce((sum, game) => sum + game.playTime, 0) / olderGames.length;
-      
-      this.statistics.performanceMetrics.improvement = olderAvgTime > 0 
-        ? Math.round(((olderAvgTime - recentAvgTime) / olderAvgTime) * 100) 
-        : 0;
+
+      const recentAvgTime =
+        recentGames.reduce((sum, game) => sum + game.playTime, 0) /
+        recentGames.length;
+      const olderAvgTime =
+        olderGames.reduce((sum, game) => sum + game.playTime, 0) /
+        olderGames.length;
+
+      this.statistics.performanceMetrics.improvement =
+        olderAvgTime > 0
+          ? Math.round(((olderAvgTime - recentAvgTime) / olderAvgTime) * 100)
+          : 0;
     }
   }
 
@@ -1365,18 +1676,23 @@ class HangmanGame {
   getDashboardStatistics() {
     const stats = this.getStatistics();
     const achievements = this.getAchievements();
-    
+
     // Calculate additional dashboard metrics
-    const unlockedAchievements = Object.values(achievements).filter(achievement => achievement.unlocked).length;
+    const unlockedAchievements = Object.values(achievements).filter(
+      (achievement) => achievement.unlocked
+    ).length;
     const totalAchievements = Object.keys(achievements).length;
-    
+
     return {
       ...stats,
       achievements: {
         ...stats.achievements,
         totalUnlocked: unlockedAchievements,
         totalAvailable: totalAchievements,
-        unlockedPercentage: totalAchievements > 0 ? Math.round((unlockedAchievements / totalAchievements) * 100) : 0,
+        unlockedPercentage:
+          totalAchievements > 0
+            ? Math.round((unlockedAchievements / totalAchievements) * 100)
+            : 0,
       },
       // Add trend data for charts
       trends: this.getTrendData(),
@@ -1397,7 +1713,10 @@ class HangmanGame {
         date,
         gamesPlayed: data.gamesPlayed,
         gamesWon: data.gamesWon,
-        winRate: data.gamesPlayed > 0 ? Math.round((data.gamesWon / data.gamesPlayed) * 100) : 0,
+        winRate:
+          data.gamesPlayed > 0
+            ? Math.round((data.gamesWon / data.gamesPlayed) * 100)
+            : 0,
         averageTime: data.averageTime,
         totalScore: data.totalScore,
       }));
@@ -1418,7 +1737,7 @@ class HangmanGame {
    */
   getWeeklyTrendData() {
     const weeklyStats = {};
-    
+
     // Aggregate daily stats into weekly stats
     Object.entries(this.statistics.dailyStats).forEach(([date, data]) => {
       const weekKey = this.getWeekKey(new Date(date));
@@ -1440,10 +1759,16 @@ class HangmanGame {
     return Object.values(weeklyStats)
       .sort((a, b) => a.week.localeCompare(b.week))
       .slice(-12) // Last 12 weeks
-      .map(week => ({
+      .map((week) => ({
         ...week,
-        winRate: week.gamesPlayed > 0 ? Math.round((week.gamesWon / week.gamesPlayed) * 100) : 0,
-        averageTime: week.gamesPlayed > 0 ? Math.round(week.totalTime / week.gamesPlayed) : 0,
+        winRate:
+          week.gamesPlayed > 0
+            ? Math.round((week.gamesWon / week.gamesPlayed) * 100)
+            : 0,
+        averageTime:
+          week.gamesPlayed > 0
+            ? Math.round(week.totalTime / week.gamesPlayed)
+            : 0,
       }));
   }
 
@@ -1453,7 +1778,7 @@ class HangmanGame {
    */
   getMonthlyTrendData() {
     const monthlyStats = {};
-    
+
     // Aggregate daily stats into monthly stats
     Object.entries(this.statistics.dailyStats).forEach(([date, data]) => {
       const monthKey = date.substring(0, 7); // YYYY-MM
@@ -1475,10 +1800,16 @@ class HangmanGame {
     return Object.values(monthlyStats)
       .sort((a, b) => a.month.localeCompare(b.month))
       .slice(-12) // Last 12 months
-      .map(month => ({
+      .map((month) => ({
         ...month,
-        winRate: month.gamesPlayed > 0 ? Math.round((month.gamesWon / month.gamesPlayed) * 100) : 0,
-        averageTime: month.gamesPlayed > 0 ? Math.round(month.totalTime / month.gamesPlayed) : 0,
+        winRate:
+          month.gamesPlayed > 0
+            ? Math.round((month.gamesWon / month.gamesPlayed) * 100)
+            : 0,
+        averageTime:
+          month.gamesPlayed > 0
+            ? Math.round(month.totalTime / month.gamesPlayed)
+            : 0,
       }));
   }
 
@@ -1497,13 +1828,17 @@ class HangmanGame {
     if (this.statistics.performanceMetrics.accuracy > 80) {
       insights.strengths.push("High accuracy in letter guessing");
     } else if (this.statistics.performanceMetrics.accuracy < 60) {
-      insights.improvements.push("Consider being more strategic with letter choices");
+      insights.improvements.push(
+        "Consider being more strategic with letter choices"
+      );
     }
 
     if (this.statistics.performanceMetrics.efficiency > 50) {
       insights.strengths.push("Efficient scoring rate");
     } else if (this.statistics.performanceMetrics.efficiency < 20) {
-      insights.improvements.push("Try to complete games faster for better scores");
+      insights.improvements.push(
+        "Try to complete games faster for better scores"
+      );
     }
 
     if (this.statistics.performanceMetrics.consistency < 10000) {
@@ -1520,15 +1855,24 @@ class HangmanGame {
 
     // Generate recommendations
     if (this.statistics.winPercentage < 50) {
-      insights.recommendations.push("Try playing on easier difficulty to build confidence");
+      insights.recommendations.push(
+        "Try playing on easier difficulty to build confidence"
+      );
     }
 
-    if (this.statistics.streaks.current === 0 && this.statistics.gamesPlayed > 5) {
-      insights.recommendations.push("Focus on consistency to build winning streaks");
+    if (
+      this.statistics.streaks.current === 0 &&
+      this.statistics.gamesPlayed > 5
+    ) {
+      insights.recommendations.push(
+        "Focus on consistency to build winning streaks"
+      );
     }
 
     if (this.statistics.averagePlayTime > 60000) {
-      insights.recommendations.push("Try to make faster decisions to improve your time");
+      insights.recommendations.push(
+        "Try to make faster decisions to improve your time"
+      );
     }
 
     return insights;
@@ -1569,23 +1913,25 @@ class HangmanGame {
       "Correct Guesses",
       "Incorrect Guesses",
       "Score",
-      "Word"
+      "Word",
     ];
 
     const csvRows = [
       headers.join(","),
-      ...this.statistics.gameHistory.map(game => [
-        new Date(game.timestamp).toLocaleDateString(),
-        game.result,
-        game.difficulty,
-        game.category,
-        game.playTime,
-        game.totalGuesses,
-        game.correctGuesses,
-        game.incorrectGuesses,
-        game.score,
-        `"${game.word}"`
-      ].join(","))
+      ...this.statistics.gameHistory.map((game) =>
+        [
+          new Date(game.timestamp).toLocaleDateString(),
+          game.result,
+          game.difficulty,
+          game.category,
+          game.playTime,
+          game.totalGuesses,
+          game.correctGuesses,
+          game.incorrectGuesses,
+          game.score,
+          `"${game.word}"`,
+        ].join(",")
+      ),
     ];
 
     return csvRows.join("\n");
