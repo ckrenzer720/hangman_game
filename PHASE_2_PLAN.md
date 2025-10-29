@@ -109,14 +109,14 @@ Phase 2 focuses on enhancing the core hangman game with advanced features, impro
 
 ### 3.1 Advanced Game Modes
 
-- [ ] **Timed Mode**
+- [x] **Timed Mode**
 
   - Countdown timer
   - Time-based scoring
   - Time pressure effects
   - Best time records
 
-- [ ] **Challenge Mode**
+- [x] **Challenge Mode**
 
   - Daily word challenges
   - Weekly tournaments

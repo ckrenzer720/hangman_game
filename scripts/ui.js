@@ -59,6 +59,12 @@ class GameUI {
       helpBtn.addEventListener("click", () => this.showHelp());
     }
 
+    // Challenge Button
+    const challengeBtn = document.getElementById("challenge");
+    if (challengeBtn) {
+      challengeBtn.addEventListener("click", () => this.showChallenge());
+    }
+
     // Pause/Resume Button
     const pauseResumeBtn = document.getElementById("pause-resume");
     if (pauseResumeBtn) {
@@ -142,6 +148,12 @@ class GameUI {
     const closeHelpBtn = document.getElementById("close-help");
     if (closeHelpBtn) {
       closeHelpBtn.addEventListener("click", () => this.hideHelp());
+    }
+
+    // Challenge Button handlers
+    const closeChallengeBtn = document.getElementById("close-challenge");
+    if (closeChallengeBtn) {
+      closeChallengeBtn.addEventListener("click", () => this.hideChallenge());
     }
 
     // Virtual Keyboard
@@ -1695,6 +1707,346 @@ class GameUI {
       modal.classList.remove("show");
       document.body.style.overflow = "";
     }
+  }
+
+  // ========================================
+  // CHALLENGE SYSTEM UI
+  // ========================================
+
+  /**
+   * Shows the challenge modal
+   */
+  showChallenge() {
+    const modal = document.getElementById("challenge-modal");
+    if (modal) {
+      modal.classList.add("show");
+      document.body.style.overflow = "hidden";
+      this.populateChallengeModal();
+    }
+  }
+
+  /**
+   * Hides the challenge modal
+   */
+  hideChallenge() {
+    const modal = document.getElementById("challenge-modal");
+    if (modal) {
+      modal.classList.remove("show");
+      document.body.style.overflow = "";
+    }
+  }
+
+  /**
+   * Populates the challenge modal with current challenges
+   */
+  populateChallengeModal() {
+    const content = document.getElementById("challenge-content");
+    if (!content) return;
+
+    // Initialize challenge system if not already done
+    if (!window.challengeSystem) {
+      window.challengeSystem = new ChallengeSystem();
+    }
+
+    const challenges = window.challengeSystem.getCurrentChallenges();
+    const leaderboard = window.challengeSystem.getLeaderboard("daily");
+
+    content.innerHTML = this.renderChallengeContent(challenges, leaderboard);
+  }
+
+  /**
+   * Renders the challenge content
+   * @param {Object} challenges - Current challenges
+   * @param {Array} leaderboard - Leaderboard data
+   * @returns {string} - HTML content
+   */
+  renderChallengeContent(challenges, leaderboard) {
+    return `
+      <div class="challenge-container">
+        ${this.renderDailyChallenge(challenges.daily)}
+        ${this.renderWeeklyTournament(challenges.weekly)}
+        ${this.renderThemedChallenges(challenges.themed)}
+        ${this.renderLeaderboard(leaderboard)}
+      </div>
+    `;
+  }
+
+  /**
+   * Renders daily challenge section
+   * @param {Object} dailyChallenge - Daily challenge data
+   * @returns {string} - HTML content
+   */
+  renderDailyChallenge(dailyChallenge) {
+    if (!dailyChallenge) return "";
+
+    return `
+      <div class="challenge-section">
+        <h3>📅 Daily Challenge</h3>
+        <div class="challenge-card daily-challenge">
+          <div class="challenge-header">
+            <h4>${dailyChallenge.description}</h4>
+            <span class="challenge-type">${dailyChallenge.type.toUpperCase()}</span>
+          </div>
+          <div class="challenge-details">
+            <div class="challenge-detail">
+              <span class="detail-label">Word:</span>
+              <span class="detail-value">${dailyChallenge.word}</span>
+            </div>
+            <div class="challenge-detail">
+              <span class="detail-label">Difficulty:</span>
+              <span class="detail-value">${dailyChallenge.difficulty}</span>
+            </div>
+            <div class="challenge-detail">
+              <span class="detail-label">Time Limit:</span>
+              <span class="detail-value">${Math.round(
+                dailyChallenge.timeLimit / 1000
+              )}s</span>
+            </div>
+            <div class="challenge-detail">
+              <span class="detail-label">Target Score:</span>
+              <span class="detail-value">${dailyChallenge.targetScore}</span>
+            </div>
+          </div>
+          <div class="challenge-rewards">
+            <h5>Rewards:</h5>
+            <div class="reward-item">
+              <span class="reward-icon">💰</span>
+              <span class="reward-text">+${
+                dailyChallenge.rewards.points
+              } points</span>
+            </div>
+            <div class="reward-item">
+              <span class="reward-icon">🏆</span>
+              <span class="reward-text">${dailyChallenge.rewards.badge}</span>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="ui.startDailyChallenge()">
+            Start Challenge
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Renders weekly tournament section
+   * @param {Object} weeklyTournament - Weekly tournament data
+   * @returns {string} - HTML content
+   */
+  renderWeeklyTournament(weeklyTournament) {
+    if (!weeklyTournament) return "";
+
+    return `
+      <div class="challenge-section">
+        <h3>🏆 Weekly Tournament</h3>
+        <div class="challenge-card weekly-tournament">
+          <div class="tournament-header">
+            <h4>${weeklyTournament.name}</h4>
+            <span class="tournament-theme">${weeklyTournament.theme}</span>
+          </div>
+          <div class="tournament-details">
+            <div class="tournament-detail">
+              <span class="detail-label">Max Attempts:</span>
+              <span class="detail-value">${
+                weeklyTournament.rules.maxAttempts
+              }</span>
+            </div>
+            <div class="tournament-detail">
+              <span class="detail-label">Time Limit:</span>
+              <span class="detail-value">${Math.round(
+                weeklyTournament.rules.timeLimit / 1000
+              )}s</span>
+            </div>
+            <div class="tournament-detail">
+              <span class="detail-label">Difficulty:</span>
+              <span class="detail-value">${
+                weeklyTournament.rules.difficulty
+              }</span>
+            </div>
+          </div>
+          <div class="tournament-prizes">
+            <h5>Prizes:</h5>
+            ${weeklyTournament.prizes
+              .map(
+                (prize) => `
+              <div class="prize-item">
+                <span class="prize-position">${prize.position}</span>
+                <span class="prize-reward">${prize.reward}</span>
+                <span class="prize-points">+${prize.points} points</span>
+              </div>
+            `
+              )
+              .join("")}
+          </div>
+          <button class="btn btn-primary" onclick="ui.startWeeklyTournament()">
+            Join Tournament
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Renders themed challenges section
+   * @param {Array} themedChallenges - Themed challenges data
+   * @returns {string} - HTML content
+   */
+  renderThemedChallenges(themedChallenges) {
+    if (!themedChallenges || themedChallenges.length === 0) return "";
+
+    return `
+      <div class="challenge-section">
+        <h3>🎨 Themed Challenges</h3>
+        <div class="themed-challenges-grid">
+          ${themedChallenges
+            .map(
+              (theme) => `
+            <div class="challenge-card themed-challenge">
+              <div class="theme-header">
+                <span class="theme-icon">${theme.icon}</span>
+                <h4>${theme.name}</h4>
+              </div>
+              <div class="theme-categories">
+                ${theme.categories
+                  .map(
+                    (category) => `
+                  <span class="category-tag">${category}</span>
+                `
+                  )
+                  .join("")}
+              </div>
+              <button class="btn btn-secondary" onclick="ui.startThemedChallenge('${
+                theme.name
+              }')">
+                Play ${theme.name}
+              </button>
+            </div>
+          `
+            )
+            .join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Renders leaderboard section
+   * @param {Array} leaderboard - Leaderboard data
+   * @returns {string} - HTML content
+   */
+  renderLeaderboard(leaderboard) {
+    return `
+      <div class="challenge-section">
+        <h3>🏅 Leaderboard</h3>
+        <div class="challenge-card leaderboard">
+          <div class="leaderboard-header">
+            <h4>Daily Top Players</h4>
+          </div>
+          <div class="leaderboard-list">
+            ${
+              leaderboard.length > 0
+                ? leaderboard
+                    .slice(0, 10)
+                    .map(
+                      (entry, index) => `
+              <div class="leaderboard-entry">
+                <span class="rank">${index + 1}</span>
+                <span class="player">${entry.player}</span>
+                <span class="score">${entry.score}</span>
+                <span class="time">${Math.round(entry.time / 1000)}s</span>
+              </div>
+            `
+                    )
+                    .join("")
+                : '<div class="no-entries">No entries yet</div>'
+            }
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Starts a daily challenge
+   */
+  startDailyChallenge() {
+    if (!window.challengeSystem) return;
+
+    const challenge = window.challengeSystem.challenges.daily.currentChallenge;
+    if (!challenge) return;
+
+    // Configure game for challenge
+    window.game.gameState.difficulty = challenge.difficulty;
+    window.game.gameState.category = challenge.category;
+
+    // Enable timed mode if it's a speed challenge
+    if (challenge.type === "speed") {
+      window.game.enableTimedMode(challenge.timeLimit);
+    }
+
+    // Start new game
+    window.game.resetGame();
+    window.game.init();
+
+    // Hide challenge modal
+    this.hideChallenge();
+
+    // Show challenge info
+    this.showFeedback("info", `Starting ${challenge.type} challenge!`);
+  }
+
+  /**
+   * Starts a weekly tournament
+   */
+  startWeeklyTournament() {
+    if (!window.challengeSystem) return;
+
+    const tournament =
+      window.challengeSystem.challenges.weekly.currentTournament;
+    if (!tournament) return;
+
+    // Configure game for tournament
+    window.game.gameState.difficulty = tournament.rules.difficulty;
+    window.game.enableTimedMode(tournament.rules.timeLimit);
+
+    // Start new game
+    window.game.resetGame();
+    window.game.init();
+
+    // Hide challenge modal
+    this.hideChallenge();
+
+    // Show tournament info
+    this.showFeedback("info", `Joining ${tournament.name}!`);
+  }
+
+  /**
+   * Starts a themed challenge
+   * @param {string} themeName - Name of the theme
+   */
+  startThemedChallenge(themeName) {
+    if (!window.challengeSystem) return;
+
+    const theme = window.challengeSystem.challenges.themed.activeThemes.find(
+      (t) => t.name === themeName
+    );
+    if (!theme) return;
+
+    // Set random category from theme
+    const randomCategory =
+      theme.categories[Math.floor(Math.random() * theme.categories.length)];
+    window.game.gameState.category = randomCategory;
+    window.game.gameState.difficulty = "medium";
+
+    // Start new game
+    window.game.resetGame();
+    window.game.init();
+
+    // Hide challenge modal
+    this.hideChallenge();
+
+    // Show theme info
+    this.showFeedback("info", `Starting ${themeName} challenge!`);
   }
 
   /**

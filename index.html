@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="styles/responsive.css" />
     <link rel="stylesheet" href="styles/dashboard.css" />
     <link rel="stylesheet" href="styles/help.css" />
+    <link rel="stylesheet" href="styles/challenge.css" />
   </head>
   <body>
     <div class="game-container">
@@ -98,6 +99,7 @@
           <button class="btn" id="new-game">New Game</button>
           <button class="btn" id="pause-resume">Pause</button>
           <button class="btn" id="hint">Hint</button>
+          <button class="btn" id="challenge">Challenge</button>
           <button class="btn" id="help">Help</button>
           <button class="btn" id="statistics">Statistics</button>
           <button class="btn" id="achievements">Achievements</button>
@@ -176,12 +178,25 @@
           </div>
         </div>
       </div>
+
+      <div class="challenge-modal" id="challenge-modal">
+        <div class="modal-content challenge-modal-content">
+          <div class="modal-header">
+            <h2>🏆 Challenges & Tournaments</h2>
+            <button class="btn btn-close" id="close-challenge">✕</button>
+          </div>
+          <div class="challenge-content" id="challenge-content">
+            <!-- Challenge content will be populated here -->
+          </div>
+        </div>
+      </div>
     </div>
 
     <script src="scripts/error-middleware.js"></script>
     <script src="scripts/utils.js"></script>
     <script src="scripts/theme-manager.js"></script>
     <script src="scripts/help-system.js"></script>
+    <script src="scripts/challenge-system.js"></script>
     <script src="scripts/game.js"></script>
     <script src="scripts/ui.js"></script>
     <script src="scripts/main.js"></script>

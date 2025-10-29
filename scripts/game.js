@@ -470,6 +470,32 @@ class HangmanGame {
 
       this.updateStatistics("won");
       this.showGameOverModal("You Won!", this.gameState.currentWord);
+
+      // Check for challenge completion
+      this.checkChallengeCompletion();
+    }
+  }
+
+  /**
+   * Checks if current game completed any challenges
+   */
+  checkChallengeCompletion() {
+    if (!window.challengeSystem) return;
+
+    const gameResult = {
+      won: this.gameState.gameStatus === "won",
+      score: this.calculateScore(),
+      time: this.endGameTimer(),
+      difficulty: this.gameState.difficulty,
+      category: this.gameState.category,
+      incorrectGuesses: this.gameState.incorrectGuesses.length,
+    };
+
+    // Check daily challenge completion
+    const dailySuccess =
+      window.challengeSystem.completeDailyChallenge(gameResult);
+    if (dailySuccess) {
+      this.showFeedback("achievement", "🎉 Daily Challenge Completed!");
     }
   }
 
