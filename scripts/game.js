@@ -22,6 +22,18 @@ class HangmanGame {
       timeLimit: 60000, // 60 seconds default
       timeRemaining: 60000,
       bestTimes: {},
+      // Practice mode configuration
+      practiceMode: {
+        enabled: false,
+        allowRepeats: true,
+        endless: true,
+        lockedDifficulty: null,
+        maxMistakesOverride: null,
+        wordLengthFilter: null, // { min: number, max: number }
+        hintsUsed: 0,
+        scorePenaltyMultiplier: 1,
+        seenWordsByKey: {}, // key: `${difficulty}-${category}` -> Set of words
+      },
     };
 
     // Initialize error middleware (will be set by main.js)
@@ -67,6 +79,7 @@ class HangmanGame {
 
     this.loadWords();
     this.applySettingsFromThemeManager();
+    this.practiceProgress = this.loadPracticeProgress();
   }
 
   /**
@@ -357,8 +370,48 @@ class HangmanGame {
       return this.selectRandomWord();
     }
 
-    const randomIndex = Math.floor(Math.random() * categoryWords.length);
-    this.gameState.currentWord = categoryWords[randomIndex].toLowerCase();
+    let filtered = categoryWords.map((w) => w.toLowerCase());
+
+    // Apply word-length filter in practice mode
+    if (
+      this.gameState.practiceMode.enabled &&
+      this.gameState.practiceMode.wordLengthFilter
+    ) {
+      const { min, max } = this.gameState.practiceMode.wordLengthFilter;
+      filtered = filtered.filter((w) => {
+        const len = w.replace(/\s/g, "").length;
+        return (min ? len >= min : true) && (max ? len <= max : true);
+      });
+    }
+
+    // Apply repeat filtering in practice mode
+    if (
+      this.gameState.practiceMode.enabled &&
+      this.gameState.practiceMode.allowRepeats === false
+    ) {
+      const key = `${this.gameState.difficulty}-${this.gameState.category}`;
+      const seen = this.gameState.practiceMode.seenWordsByKey[key] || new Set();
+      filtered = filtered.filter((w) => !seen.has(w));
+      if (filtered.length === 0) {
+        // Reset seen set if exhausted
+        this.gameState.practiceMode.seenWordsByKey[key] = new Set();
+        filtered = categoryWords.map((w) => w.toLowerCase());
+      }
+    }
+
+    const randomIndex = Math.floor(Math.random() * filtered.length);
+    this.gameState.currentWord = filtered[randomIndex];
+
+    // Mark as seen in practice mode
+    if (this.gameState.practiceMode.enabled) {
+      const key = `${this.gameState.difficulty}-${this.gameState.category}`;
+      if (!this.gameState.practiceMode.seenWordsByKey[key]) {
+        this.gameState.practiceMode.seenWordsByKey[key] = new Set();
+      }
+      this.gameState.practiceMode.seenWordsByKey[key].add(
+        this.gameState.currentWord
+      );
+    }
   }
 
   createHiddenWord() {
@@ -471,6 +524,14 @@ class HangmanGame {
       this.updateStatistics("won");
       this.showGameOverModal("You Won!", this.gameState.currentWord);
 
+      // Auto-continue in practice endless mode
+      if (this.gameState.practiceMode.enabled && this.gameState.practiceMode.endless) {
+        setTimeout(() => {
+          this.hideGameOverModal();
+          this.resetGame();
+        }, 1200);
+      }
+
       // Check for challenge completion
       this.checkChallengeCompletion();
     }
@@ -538,6 +599,14 @@ class HangmanGame {
 
       this.updateStatistics("lost");
       this.showGameOverModal("Game Over!", this.gameState.currentWord);
+
+      // Auto-continue in practice endless mode
+      if (this.gameState.practiceMode.enabled && this.gameState.practiceMode.endless) {
+        setTimeout(() => {
+          this.hideGameOverModal();
+          this.resetGame();
+        }, 1200);
+      }
     }
   }
 
@@ -716,6 +785,13 @@ class HangmanGame {
       const randomLetter =
         unrevealedLetters[Math.floor(Math.random() * unrevealedLetters.length)];
       this.makeGuess(randomLetter);
+
+      // Practice mode: apply hint penalty
+      if (this.gameState.practiceMode.enabled) {
+        this.gameState.practiceMode.hintsUsed += 1;
+        // -10% score per hint (multiplicative)
+        this.gameState.practiceMode.scorePenaltyMultiplier *= 0.9;
+      }
     }
   }
 
@@ -750,7 +826,9 @@ class HangmanGame {
   // ========================================
 
   updateDifficultyProgression() {
-    if (!this.difficultyProgression.enabled) return;
+    // Disable progression in practice mode
+    if (!this.difficultyProgression.enabled || this.gameState.practiceMode.enabled)
+      return;
 
     this.difficultyProgression.consecutiveWins++;
     const currentDifficulty = this.gameState.difficulty;
@@ -827,8 +905,13 @@ class HangmanGame {
       timeBonus = Math.max(0, Math.floor((30000 - playTime) / 1000) * 2);
     }
 
-    const totalScore =
+    let totalScore =
       (baseScore + efficiencyBonus + timeBonus) * difficultyMultiplier;
+
+    // Apply practice hint penalties
+    if (this.gameState.practiceMode.enabled) {
+      totalScore = Math.round(totalScore * this.gameState.practiceMode.scorePenaltyMultiplier);
+    }
     return Math.max(50, totalScore); // Minimum score of 50
   }
 
@@ -928,6 +1011,10 @@ class HangmanGame {
   }
 
   checkAchievements() {
+    // Disable achievements in practice mode
+    if (this.gameState.practiceMode.enabled) {
+      return;
+    }
     const stats = this.statistics;
     const newAchievements = [];
 
@@ -1601,10 +1688,101 @@ class HangmanGame {
     // Save to localStorage
     this.saveStatistics();
 
+    // Practice progress tracking
+    if (this.gameState.practiceMode.enabled) {
+      this.updatePracticeProgress(gameResult);
+      this.savePracticeProgress();
+    }
+
     // Update streak indicator
     if (window.ui && window.ui.updateStreakIndicator) {
       window.ui.updateStreakIndicator();
     }
+  }
+
+  // ========================================
+  // PRACTICE MODE
+  // ========================================
+
+  enablePracticeMode(config = {}) {
+    this.gameState.practiceMode.enabled = true;
+    this.gameState.practiceMode.allowRepeats =
+      config.allowRepeats ?? this.gameState.practiceMode.allowRepeats;
+    this.gameState.practiceMode.endless =
+      config.endless ?? this.gameState.practiceMode.endless;
+    this.gameState.practiceMode.lockedDifficulty =
+      config.lockedDifficulty ?? this.gameState.practiceMode.lockedDifficulty;
+    this.gameState.practiceMode.maxMistakesOverride =
+      config.maxMistakesOverride ?? null;
+    this.gameState.practiceMode.wordLengthFilter =
+      config.wordLengthFilter ?? null;
+    this.gameState.practiceMode.hintsUsed = 0;
+    this.gameState.practiceMode.scorePenaltyMultiplier = 1;
+
+    // Lock difficulty if provided
+    if (this.gameState.practiceMode.lockedDifficulty) {
+      this.gameState.difficulty = this.gameState.practiceMode.lockedDifficulty;
+    }
+
+    // Override max mistakes if provided
+    if (this.gameState.practiceMode.maxMistakesOverride != null) {
+      this.gameState.maxIncorrectGuesses = this.gameState.practiceMode.maxMistakesOverride;
+    }
+  }
+
+  disablePracticeMode() {
+    this.gameState.practiceMode.enabled = false;
+    this.gameState.practiceMode.hintsUsed = 0;
+    this.gameState.practiceMode.scorePenaltyMultiplier = 1;
+    // Restore defaults
+    this.gameState.maxIncorrectGuesses = 6;
+  }
+
+  updatePracticeProgress(gameResult) {
+    const category = this.gameState.category;
+    if (!this.practiceProgress.perCategory[category]) {
+      this.practiceProgress.perCategory[category] = {
+        played: 0,
+        correct: 0,
+        wrong: 0,
+        masteredWords: [],
+      };
+    }
+    const stats = this.practiceProgress.perCategory[category];
+    stats.played += 1;
+    if (gameResult === "won") stats.correct += 1;
+    if (gameResult === "lost") stats.wrong += 1;
+
+    // Mark mastered if won with <=1 incorrect guess
+    if (
+      gameResult === "won" &&
+      this.gameState.incorrectGuesses.length <= 1 &&
+      !stats.masteredWords.includes(this.gameState.currentWord)
+    ) {
+      stats.masteredWords.push(this.gameState.currentWord);
+    }
+  }
+
+  loadPracticeProgress() {
+    if (!GameUtils.isLocalStorageAvailable()) {
+      return { perCategory: {} };
+    }
+    try {
+      const raw = localStorage.getItem("hangmanPracticeProgress");
+      return raw ? JSON.parse(raw) : { perCategory: {} };
+    } catch (e) {
+      return { perCategory: {} };
+    }
+  }
+
+  savePracticeProgress() {
+    if (!GameUtils.isLocalStorageAvailable()) return;
+    try {
+      localStorage.setItem(
+        "hangmanPracticeProgress",
+        JSON.stringify(this.practiceProgress)
+      );
+    } catch (e) {}
   }
 
   /**

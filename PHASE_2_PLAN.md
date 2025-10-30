@@ -123,11 +123,11 @@ Phase 2 focuses on enhancing the core hangman game with advanced features, impro
   - Special themed categories
   - Leaderboard integration
 
-- [ ] **Practice Mode**
-  - Specific category practice
-  - Difficulty-specific training
-  - Hint system with penalties
-  - Learning progress tracking
+- [x] **Practice Mode**
+  - Specific category practice: choose any category, allow repeats toggle, endless session
+  - Difficulty-specific training: lock difficulty, set max mistakes, optional word-length filter
+  - Hint system with penalties: reveal random letter, -10% score per hint, disable achievements
+  - Learning progress tracking: per-category accuracy, avg mistakes, mastered words list
 
 ### 3.2 Social Features
 

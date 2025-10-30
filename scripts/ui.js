@@ -71,6 +71,12 @@ class GameUI {
       pauseResumeBtn.addEventListener("click", () => this.togglePause());
     }
 
+    // Practice Button
+    const practiceBtn = document.getElementById("practice");
+    if (practiceBtn) {
+      practiceBtn.addEventListener("click", () => this.showPractice());
+    }
+
     // Quit Button
     const quitBtn = document.getElementById("quit");
     if (quitBtn) {
@@ -156,6 +162,22 @@ class GameUI {
       closeChallengeBtn.addEventListener("click", () => this.hideChallenge());
     }
 
+    // Practice modal handlers
+    const closePracticeBtn = document.getElementById("close-practice");
+    if (closePracticeBtn) {
+      closePracticeBtn.addEventListener("click", () => this.hidePractice());
+    }
+    const practiceModal = document.getElementById("practice-modal");
+    if (practiceModal) {
+      practiceModal.addEventListener("click", (e) => {
+        if (e.target === practiceModal) this.hidePractice();
+      });
+    }
+    const startPracticeBtn = document.getElementById("start-practice");
+    if (startPracticeBtn) {
+      startPracticeBtn.addEventListener("click", () => this.startPractice());
+    }
+
     // Virtual Keyboard
     const keyboard = document.getElementById("keyboard");
     if (keyboard) {
@@ -208,6 +230,118 @@ class GameUI {
         }
       });
     }
+  }
+
+  // ========================================
+  // PRACTICE MODE UI
+  // ========================================
+
+  showPractice() {
+    const modal = document.getElementById("practice-modal");
+    const content = document.getElementById("practice-content");
+    if (!modal || !content) return;
+
+    content.innerHTML = this.renderPracticeSettings();
+    modal.classList.add("show");
+    document.body.style.overflow = "hidden";
+  }
+
+  hidePractice() {
+    const modal = document.getElementById("practice-modal");
+    if (modal) {
+      modal.classList.remove("show");
+      document.body.style.overflow = "";
+    }
+  }
+
+  renderPracticeSettings() {
+    const difficulties = ["easy", "medium", "hard"];
+    const categories = Object.keys(
+      this.game.wordLists[this.game.gameState.difficulty] || {}
+    );
+
+    return `
+      <div class="practice-grid">
+        <div class="setting-item">
+          <label>Category</label>
+          <select id="practice-category">
+            ${categories
+              .map(
+                (c) => `<option value="${c}" ${c === this.game.gameState.category ? "selected" : ""}>${c}</option>`
+              )
+              .join("")}
+          </select>
+        </div>
+        <div class="setting-item">
+          <label>Lock Difficulty</label>
+          <select id="practice-difficulty">
+            <option value="">(no lock)</option>
+            ${difficulties
+              .map(
+                (d) => `<option value="${d}" ${d === this.game.gameState.difficulty ? "selected" : ""}>${d}</option>`
+              )
+              .join("")}
+          </select>
+        </div>
+        <div class="setting-item">
+          <label>Allow Repeats</label>
+          <input type="checkbox" id="practice-allow-repeats" checked />
+        </div>
+        <div class="setting-item">
+          <label>Endless Session</label>
+          <input type="checkbox" id="practice-endless" checked />
+        </div>
+        <div class="setting-item">
+          <label>Max Mistakes (override)</label>
+          <input type="number" id="practice-max-mistakes" min="1" max="10" placeholder="e.g. 6" />
+        </div>
+        <div class="setting-item">
+          <label>Word Length Filter</label>
+          <div style="display:flex; gap:8px;">
+            <input type="number" id="practice-min-length" min="1" placeholder="min" />
+            <input type="number" id="practice-max-length" min="1" placeholder="max" />
+          </div>
+        </div>
+        <div class="setting-hint">Hints apply -10% score per use and achievements are disabled in Practice.</div>
+      </div>
+    `;
+  }
+
+  startPractice() {
+    const category = (document.getElementById("practice-category") || {}).value || this.game.gameState.category;
+    const difficultySelect = document.getElementById("practice-difficulty");
+    const lockedDifficulty = difficultySelect && difficultySelect.value ? difficultySelect.value : null;
+    const allowRepeats = !!(document.getElementById("practice-allow-repeats") || { checked: true }).checked;
+    const endless = !!(document.getElementById("practice-endless") || { checked: true }).checked;
+    const maxMistakesVal = (document.getElementById("practice-max-mistakes") || {}).value;
+    const minLenVal = (document.getElementById("practice-min-length") || {}).value;
+    const maxLenVal = (document.getElementById("practice-max-length") || {}).value;
+
+    const config = {
+      allowRepeats,
+      endless,
+      lockedDifficulty,
+      maxMistakesOverride: maxMistakesVal ? parseInt(maxMistakesVal, 10) : null,
+      wordLengthFilter:
+        minLenVal || maxLenVal
+          ? {
+              min: minLenVal ? parseInt(minLenVal, 10) : null,
+              max: maxLenVal ? parseInt(maxLenVal, 10) : null,
+            }
+          : null,
+    };
+
+    if (category) this.game.gameState.category = category;
+    if (lockedDifficulty) this.game.gameState.difficulty = lockedDifficulty;
+
+    this.game.enablePracticeMode(config);
+
+    // Start new practice game
+    this.game.resetGame();
+    this.game.init();
+
+    this.hidePractice();
+    this.showFeedback("info", "Practice started. Good luck!");
   }
 
   handleLetterClick(keyElement) {
