@@ -60,6 +60,17 @@
               </div>
             </div>
           </div>
+
+          <!-- Multiplayer Player Indicator -->
+          <div class="multiplayer-indicator" id="multiplayer-indicator" style="display: none;">
+            <div class="current-player-display">
+              <div class="player-label">Current Player</div>
+              <div class="player-name" id="current-player-name"></div>
+            </div>
+            <div class="player-scores" id="player-scores">
+              <!-- Player scores will be populated here -->
+            </div>
+          </div>
         </div>
       </header>
 
@@ -100,6 +111,7 @@
           <button class="btn" id="pause-resume">Pause</button>
           <button class="btn" id="hint">Hint</button>
           <button class="btn" id="practice">Practice</button>
+          <button class="btn" id="multiplayer">Multiplayer</button>
           <button class="btn" id="challenge">Challenge</button>
           <button class="btn" id="help">Help</button>
           <button class="btn" id="statistics">Statistics</button>
@@ -203,6 +215,33 @@
           </div>
           <div class="modal-actions">
             <button class="btn" id="start-practice">Start Practice</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="multiplayer-modal" id="multiplayer-modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>👥 Local Multiplayer</h2>
+            <button class="btn btn-close" id="close-multiplayer">✕</button>
+          </div>
+          <div class="multiplayer-content" id="multiplayer-content">
+            <!-- Multiplayer setup will be populated here -->
+          </div>
+        </div>
+      </div>
+
+      <div class="multiplayer-winner-modal" id="multiplayer-winner-modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 id="winner-title">🏆 Winner!</h2>
+          </div>
+          <div class="winner-content" id="winner-content">
+            <!-- Winner comparison will be populated here -->
+          </div>
+          <div class="modal-actions">
+            <button class="btn" id="multiplayer-play-again">Play Again</button>
+            <button class="btn" id="multiplayer-end-game">End Game</button>
           </div>
         </div>
       </div>

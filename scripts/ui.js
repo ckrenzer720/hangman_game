@@ -77,6 +77,12 @@ class GameUI {
       practiceBtn.addEventListener("click", () => this.showPractice());
     }
 
+    // Multiplayer Button
+    const multiplayerBtn = document.getElementById("multiplayer");
+    if (multiplayerBtn) {
+      multiplayerBtn.addEventListener("click", () => this.showMultiplayer());
+    }
+
     // Quit Button
     const quitBtn = document.getElementById("quit");
     if (quitBtn) {
@@ -176,6 +182,26 @@ class GameUI {
     const startPracticeBtn = document.getElementById("start-practice");
     if (startPracticeBtn) {
       startPracticeBtn.addEventListener("click", () => this.startPractice());
+    }
+
+    // Multiplayer modal handlers
+    const closeMultiplayerBtn = document.getElementById("close-multiplayer");
+    if (closeMultiplayerBtn) {
+      closeMultiplayerBtn.addEventListener("click", () => this.hideMultiplayer());
+    }
+    const multiplayerModal = document.getElementById("multiplayer-modal");
+    if (multiplayerModal) {
+      multiplayerModal.addEventListener("click", (e) => {
+        if (e.target === multiplayerModal) this.hideMultiplayer();
+      });
+    }
+    const multiplayerPlayAgainBtn = document.getElementById("multiplayer-play-again");
+    if (multiplayerPlayAgainBtn) {
+      multiplayerPlayAgainBtn.addEventListener("click", () => this.startNewMultiplayerGame());
+    }
+    const multiplayerEndGameBtn = document.getElementById("multiplayer-end-game");
+    if (multiplayerEndGameBtn) {
+      multiplayerEndGameBtn.addEventListener("click", () => this.endMultiplayerGame());
     }
 
     // Virtual Keyboard
@@ -342,6 +368,295 @@ class GameUI {
 
     this.hidePractice();
     this.showFeedback("info", "Practice started. Good luck!");
+  }
+
+  // ========================================
+  // MULTIPLAYER MODE UI
+  // ========================================
+
+  showMultiplayer() {
+    const modal = document.getElementById("multiplayer-modal");
+    const content = document.getElementById("multiplayer-content");
+    if (!modal || !content) return;
+
+    content.innerHTML = this.renderMultiplayerSetup();
+    modal.classList.add("show");
+    document.body.style.overflow = "hidden";
+    
+    // Add event listeners to dynamic elements
+    const addPlayerBtn = document.getElementById("add-player-btn");
+    if (addPlayerBtn) {
+      addPlayerBtn.addEventListener("click", () => this.addPlayerInput());
+    }
+    const startMultiplayerBtn = document.getElementById("start-multiplayer-btn");
+    if (startMultiplayerBtn) {
+      startMultiplayerBtn.addEventListener("click", () => this.startMultiplayer());
+    }
+    const roundsInput = document.getElementById("multiplayer-rounds");
+    if (roundsInput) {
+      roundsInput.addEventListener("input", (e) => {
+        const value = parseInt(e.target.value, 10);
+        if (isNaN(value) || value < 1) {
+          e.target.value = "";
+        }
+      });
+    }
+  }
+
+  hideMultiplayer() {
+    const modal = document.getElementById("multiplayer-modal");
+    if (modal) {
+      modal.classList.remove("show");
+      document.body.style.overflow = "";
+    }
+  }
+
+  renderMultiplayerSetup() {
+    return `
+      <div class="multiplayer-setup">
+        <div class="setup-section">
+          <h3>Add Players</h3>
+          <p class="setup-hint">Add at least 2 players to start multiplayer mode</p>
+          <div id="players-list" class="players-list">
+            <div class="player-input-row">
+              <input type="text" class="player-name-input" placeholder="Player 1" data-player-index="0" />
+              <button class="btn-remove-player" onclick="ui.removePlayerInput(0)" style="display:none;">✕</button>
+            </div>
+            <div class="player-input-row">
+              <input type="text" class="player-name-input" placeholder="Player 2" data-player-index="1" />
+              <button class="btn-remove-player" onclick="ui.removePlayerInput(1)" style="display:none;">✕</button>
+            </div>
+          </div>
+          <button class="btn btn-secondary" id="add-player-btn" style="margin-top: 10px;">+ Add Player</button>
+        </div>
+        <div class="setup-section">
+          <h3>Game Settings</h3>
+          <div class="setting-item">
+            <label>Number of Rounds (optional)</label>
+            <input type="number" id="multiplayer-rounds" min="1" max="10" placeholder="Leave empty for unlimited" />
+            <small>Each player plays one word per round. Leave empty to play until you decide to stop.</small>
+          </div>
+        </div>
+        <div class="modal-actions" style="margin-top: 20px;">
+          <button class="btn btn-primary" id="start-multiplayer-btn">Start Multiplayer Game</button>
+        </div>
+      </div>
+    `;
+  }
+
+  addPlayerInput() {
+    const playersList = document.getElementById("players-list");
+    if (!playersList) return;
+
+    const inputs = playersList.querySelectorAll(".player-name-input");
+    const nextIndex = inputs.length;
+
+    const row = document.createElement("div");
+    row.className = "player-input-row";
+    row.innerHTML = `
+      <input type="text" class="player-name-input" placeholder="Player ${nextIndex + 1}" data-player-index="${nextIndex}" />
+      <button class="btn-remove-player" onclick="ui.removePlayerInput(${nextIndex})">✕</button>
+    `;
+    playersList.appendChild(row);
+
+    // Show remove buttons if we have more than 2 players
+    if (inputs.length + 1 > 2) {
+      playersList.querySelectorAll(".btn-remove-player").forEach(btn => {
+        btn.style.display = "inline-block";
+      });
+    }
+  }
+
+  removePlayerInput(index) {
+    const playersList = document.getElementById("players-list");
+    if (!playersList) return;
+
+    const rows = playersList.querySelectorAll(".player-input-row");
+    if (rows.length <= 2) {
+      this.showFeedback("warning", "You need at least 2 players!");
+      return;
+    }
+
+    const rowToRemove = Array.from(rows).find(row => {
+      const input = row.querySelector(`[data-player-index="${index}"]`);
+      return input !== null;
+    });
+
+    if (rowToRemove) {
+      rowToRemove.remove();
+      // Re-index remaining inputs
+      const remainingInputs = playersList.querySelectorAll(".player-name-input");
+      remainingInputs.forEach((input, idx) => {
+        input.setAttribute("data-player-index", idx);
+        input.placeholder = `Player ${idx + 1}`;
+        const btn = input.parentElement.querySelector(".btn-remove-player");
+        if (btn) {
+          btn.setAttribute("onclick", `ui.removePlayerInput(${idx})`);
+        }
+      });
+
+      // Hide remove buttons if we're back to 2 players
+      if (remainingInputs.length === 2) {
+        playersList.querySelectorAll(".btn-remove-player").forEach(btn => {
+          btn.style.display = "none";
+        });
+      }
+    }
+  }
+
+  startMultiplayer() {
+    const inputs = document.querySelectorAll(".player-name-input");
+    const playerNames = Array.from(inputs)
+      .map(input => input.value.trim())
+      .filter(name => name.length > 0);
+
+    if (playerNames.length < 2) {
+      this.showFeedback("error", "Please add at least 2 players!");
+      return;
+    }
+
+    const roundsInput = document.getElementById("multiplayer-rounds");
+    const totalRounds = roundsInput && roundsInput.value ? parseInt(roundsInput.value, 10) : null;
+
+    // Enable multiplayer mode
+    this.game.enableMultiplayerMode(playerNames, totalRounds);
+
+    // Start first player's game
+    this.game.resetGame();
+    this.game.init();
+
+    this.hideMultiplayer();
+    this.showFeedback("success", `Multiplayer game started! ${playerNames.length} players.`);
+    
+    const firstPlayer = this.game.getCurrentPlayer();
+    if (firstPlayer) {
+      this.showFeedback("info", `First player: ${firstPlayer.name}`);
+    }
+  }
+
+  showMultiplayerIndicator() {
+    const indicator = document.getElementById("multiplayer-indicator");
+    if (indicator) {
+      indicator.style.display = "block";
+    }
+    this.updateMultiplayerIndicator();
+  }
+
+  hideMultiplayerIndicator() {
+    const indicator = document.getElementById("multiplayer-indicator");
+    if (indicator) {
+      indicator.style.display = "none";
+    }
+  }
+
+  updateMultiplayerIndicator() {
+    if (!this.game.gameState.multiplayer.enabled) return;
+
+    const currentPlayer = this.game.getCurrentPlayer();
+    const allPlayers = this.game.getMultiplayerScores();
+
+    const currentPlayerName = document.getElementById("current-player-name");
+    if (currentPlayerName && currentPlayer) {
+      currentPlayerName.textContent = currentPlayer.name;
+    }
+
+    const playerScoresContainer = document.getElementById("player-scores");
+    if (playerScoresContainer) {
+      playerScoresContainer.innerHTML = allPlayers.map((player, index) => {
+        const isCurrent = index === this.game.gameState.multiplayer.currentPlayerIndex;
+        return `
+          <div class="player-score-item ${isCurrent ? "current" : ""}">
+            <span class="player-score-name">${player.name}</span>
+            <span class="player-score-value">${player.score} pts</span>
+            <span class="player-score-wins">${player.wins} wins</span>
+          </div>
+        `;
+      }).join("");
+    }
+  }
+
+  showMultiplayerWinner(winners, allPlayers) {
+    const modal = document.getElementById("multiplayer-winner-modal");
+    const content = document.getElementById("winner-content");
+    const title = document.getElementById("winner-title");
+
+    if (!modal || !content) return;
+
+    const isTie = winners.length > 1;
+    if (title) {
+      title.textContent = isTie ? "🏆 It's a Tie!" : "🏆 Winner!";
+    }
+
+    // Sort all players for display
+    const sortedPlayers = [...allPlayers].sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return b.wins - a.wins;
+    });
+
+    content.innerHTML = `
+      <div class="winner-display">
+        ${isTie ? `
+          <div class="tie-message">
+            <h3>${winners.map(w => w.name).join(" and ")} tied!</h3>
+            <p>Both scored ${winners[0].score} points with ${winners[0].wins} wins.</p>
+          </div>
+        ` : `
+          <div class="winner-message">
+            <h3>${winners[0].name} Wins!</h3>
+            <p>Scored ${winners[0].score} points with ${winners[0].wins} wins!</p>
+          </div>
+        `}
+        
+        <div class="final-scores">
+          <h4>Final Scores</h4>
+          <div class="scoreboard">
+            ${sortedPlayers.map((player, index) => `
+              <div class="scoreboard-item ${winners.some(w => w.name === player.name) ? "winner" : ""}">
+                <span class="rank">${index + 1}</span>
+                <span class="name">${player.name}</span>
+                <span class="score">${player.score} points</span>
+                <span class="wins">${player.wins} wins</span>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      </div>
+    `;
+
+    modal.classList.add("show");
+    document.body.style.overflow = "hidden";
+
+    // Celebration effect
+    if (window.ui && window.ui.createConfetti) {
+      window.ui.createConfetti();
+    }
+  }
+
+  startNewMultiplayerGame() {
+    const modal = document.getElementById("multiplayer-winner-modal");
+    if (modal) {
+      modal.classList.remove("show");
+      document.body.style.overflow = "";
+    }
+    // Get player info before disabling
+    const players = this.game.gameState.multiplayer.players.map(p => p.name);
+    const totalRounds = this.game.gameState.multiplayer.totalRounds;
+    // Restart with same players
+    this.game.enableMultiplayerMode(players, totalRounds);
+    this.game.resetGame();
+    this.game.init();
+    this.showFeedback("success", "New multiplayer game started!");
+  }
+
+  endMultiplayerGame() {
+    const modal = document.getElementById("multiplayer-winner-modal");
+    if (modal) {
+      modal.classList.remove("show");
+      document.body.style.overflow = "";
+    }
+    this.game.disableMultiplayerMode();
+    this.hideMultiplayerIndicator();
+    this.showFeedback("info", "Multiplayer game ended.");
   }
 
   handleLetterClick(keyElement) {

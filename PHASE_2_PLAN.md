@@ -131,7 +131,7 @@ Phase 2 focuses on enhancing the core hangman game with advanced features, impro
 
 ### 3.2 Social Features
 
-- [ ] **Local Multiplayer**
+- [x] **Local Multiplayer**
 
   - Pass-and-play mode
   - Turn-based gameplay

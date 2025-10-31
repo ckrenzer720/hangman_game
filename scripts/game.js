@@ -34,6 +34,15 @@ class HangmanGame {
         scorePenaltyMultiplier: 1,
         seenWordsByKey: {}, // key: `${difficulty}-${category}` -> Set of words
       },
+      // Multiplayer configuration
+      multiplayer: {
+        enabled: false,
+        players: [], // Array of { name: string, score: number, wins: number }
+        currentPlayerIndex: 0,
+        roundsPlayed: 0,
+        totalRounds: null, // null = play until all players have had equal turns
+        passAndPlay: true,
+      },
     };
 
     // Initialize error middleware (will be set by main.js)
@@ -522,6 +531,32 @@ class HangmanGame {
       this.triggerWinCelebration();
 
       this.updateStatistics("won");
+
+      // Handle multiplayer scoring
+      if (this.gameState.multiplayer.enabled) {
+        const currentPlayer = this.gameState.multiplayer.players[this.gameState.multiplayer.currentPlayerIndex];
+        const roundScore = this.calculateScore();
+        currentPlayer.score += roundScore;
+        currentPlayer.wins += 1;
+        
+        // Check if multiplayer game should end after this round
+        // We check BEFORE advancing to next player
+        const willEndAfterThisRound = this.shouldEndMultiplayerGameAfterAdvance();
+        
+        this.showGameOverModal("You Won!", this.gameState.currentWord);
+
+        // Auto-advance to next player in multiplayer mode, or end game
+        setTimeout(() => {
+          this.hideGameOverModal();
+          if (willEndAfterThisRound) {
+            this.endMultiplayerGame();
+          } else {
+            this.advanceToNextPlayer();
+          }
+        }, 2500);
+        return;
+      }
+
       this.showGameOverModal("You Won!", this.gameState.currentWord);
 
       // Auto-continue in practice endless mode
@@ -598,6 +633,26 @@ class HangmanGame {
       this.triggerFailureEffect();
 
       this.updateStatistics("lost");
+
+      // Handle multiplayer - player lost this round
+      if (this.gameState.multiplayer.enabled) {
+        // Check if multiplayer game should end after this round
+        const willEndAfterThisRound = this.shouldEndMultiplayerGameAfterAdvance();
+        
+        this.showGameOverModal("Game Over!", this.gameState.currentWord);
+
+        // Auto-advance to next player in multiplayer mode, or end game
+        setTimeout(() => {
+          this.hideGameOverModal();
+          if (willEndAfterThisRound) {
+            this.endMultiplayerGame();
+          } else {
+            this.advanceToNextPlayer();
+          }
+        }, 2500);
+        return;
+      }
+
       this.showGameOverModal("Game Over!", this.gameState.currentWord);
 
       // Auto-continue in practice endless mode
@@ -1783,6 +1838,123 @@ class HangmanGame {
         JSON.stringify(this.practiceProgress)
       );
     } catch (e) {}
+  }
+
+  // ========================================
+  // MULTIPLAYER MODE
+  // ========================================
+
+  enableMultiplayerMode(playerNames, totalRounds = null) {
+    this.gameState.multiplayer.enabled = true;
+    this.gameState.multiplayer.players = playerNames.map(name => ({
+      name: name.trim() || `Player ${playerNames.indexOf(name) + 1}`,
+      score: 0,
+      wins: 0,
+    }));
+    this.gameState.multiplayer.currentPlayerIndex = 0;
+    this.gameState.multiplayer.roundsPlayed = 0;
+    this.gameState.multiplayer.totalRounds = totalRounds;
+    
+    // Update UI to show multiplayer indicators
+    if (window.ui && window.ui.showMultiplayerIndicator) {
+      window.ui.showMultiplayerIndicator();
+    }
+  }
+
+  disableMultiplayerMode() {
+    this.gameState.multiplayer.enabled = false;
+    this.gameState.multiplayer.players = [];
+    this.gameState.multiplayer.currentPlayerIndex = 0;
+    this.gameState.multiplayer.roundsPlayed = 0;
+    
+    // Hide multiplayer indicators
+    if (window.ui && window.ui.hideMultiplayerIndicator) {
+      window.ui.hideMultiplayerIndicator();
+    }
+  }
+
+  getCurrentPlayer() {
+    if (!this.gameState.multiplayer.enabled || this.gameState.multiplayer.players.length === 0) {
+      return null;
+    }
+    return this.gameState.multiplayer.players[this.gameState.multiplayer.currentPlayerIndex];
+  }
+
+  advanceToNextPlayer() {
+    if (!this.gameState.multiplayer.enabled) return;
+
+    this.gameState.multiplayer.roundsPlayed += 1;
+    
+    // Move to next player
+    this.gameState.multiplayer.currentPlayerIndex = 
+      (this.gameState.multiplayer.currentPlayerIndex + 1) % this.gameState.multiplayer.players.length;
+    
+    // Reset game for next player
+    this.resetGame();
+    
+    // Update UI
+    if (window.ui && window.ui.updateMultiplayerIndicator) {
+      window.ui.updateMultiplayerIndicator();
+    }
+
+    // Show feedback
+    const currentPlayer = this.getCurrentPlayer();
+    if (currentPlayer && window.ui) {
+      window.ui.showFeedback("info", `Now playing: ${currentPlayer.name}`);
+    }
+  }
+
+  shouldEndMultiplayerGame() {
+    // This method is kept for backwards compatibility but not used
+    return this.shouldEndMultiplayerGameAfterAdvance();
+  }
+
+  shouldEndMultiplayerGameAfterAdvance() {
+    if (!this.gameState.multiplayer.enabled) return false;
+    
+    // Calculate what the roundsPlayed will be after advancing
+    const nextRoundsPlayed = this.gameState.multiplayer.roundsPlayed + 1;
+    
+    // If totalRounds is set, check if we've reached it
+    if (this.gameState.multiplayer.totalRounds !== null) {
+      const roundsCompleted = Math.floor(nextRoundsPlayed / this.gameState.multiplayer.players.length);
+      return roundsCompleted >= this.gameState.multiplayer.totalRounds;
+    }
+    
+    // For unlimited play, don't auto-end (users can end manually)
+    return false;
+  }
+
+  endMultiplayerGame() {
+    if (!this.gameState.multiplayer.enabled) return;
+
+    // Determine winner(s)
+    const players = [...this.gameState.multiplayer.players];
+    players.sort((a, b) => {
+      // Sort by score first, then by wins
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+      return b.wins - a.wins;
+    });
+
+    const winner = players[0];
+    const winners = players.filter(p => p.score === winner.score && p.wins === winner.wins);
+    
+    // Show winner modal
+    if (window.ui && window.ui.showMultiplayerWinner) {
+      window.ui.showMultiplayerWinner(winners, players);
+    }
+
+    // Disable multiplayer mode
+    this.disableMultiplayerMode();
+  }
+
+  getMultiplayerScores() {
+    if (!this.gameState.multiplayer.enabled) {
+      return [];
+    }
+    return [...this.gameState.multiplayer.players];
   }
 
   /**
