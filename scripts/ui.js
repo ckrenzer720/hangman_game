@@ -95,6 +95,36 @@ class GameUI {
       playAgainBtn.addEventListener("click", () => this.startNewGame());
     }
 
+    // Share Result Button
+    const shareResultBtn = document.getElementById("share-result");
+    if (shareResultBtn) {
+      shareResultBtn.addEventListener("click", () => this.shareGameResult());
+    }
+
+    // Share Achievements Button
+    const shareAchievementsBtn = document.getElementById("share-achievements");
+    if (shareAchievementsBtn) {
+      shareAchievementsBtn.addEventListener("click", () => this.shareAchievements());
+    }
+
+    // Share Multiplayer Result Button
+    const shareMultiplayerBtn = document.getElementById("share-multiplayer-result");
+    if (shareMultiplayerBtn) {
+      shareMultiplayerBtn.addEventListener("click", () => this.shareMultiplayerResult());
+    }
+
+    // Share modal handlers
+    const closeShareBtn = document.getElementById("close-share");
+    if (closeShareBtn) {
+      closeShareBtn.addEventListener("click", () => this.hideShareModal());
+    }
+    const shareModal = document.getElementById("share-modal");
+    if (shareModal) {
+      shareModal.addEventListener("click", (e) => {
+        if (e.target === shareModal) this.hideShareModal();
+      });
+    }
+
     // Resume Button (in pause overlay)
     const resumeBtn = document.getElementById("resume-game");
     if (resumeBtn) {
@@ -657,6 +687,109 @@ class GameUI {
     this.game.disableMultiplayerMode();
     this.hideMultiplayerIndicator();
     this.showFeedback("info", "Multiplayer game ended.");
+  }
+
+  // ========================================
+  // SHARE FUNCTIONALITY
+  // ========================================
+
+  shareGameResult() {
+    if (!window.ShareSystem) {
+      window.ShareSystem = new ShareSystem();
+    }
+
+    const result = this.game.gameState.gameStatus === "won" ? "won" : "lost";
+    const word = this.game.gameState.currentWord;
+    const score = this.game.gameState.score;
+    const difficulty = this.game.gameState.difficulty;
+    const incorrectGuesses = this.game.gameState.incorrectGuesses.length;
+    const maxIncorrectGuesses = this.game.gameState.maxIncorrectGuesses;
+
+    const shareData = {
+      type: "game_result",
+      result: result,
+      word: word,
+      score: score,
+      difficulty: difficulty,
+      incorrectGuesses: incorrectGuesses,
+      maxIncorrectGuesses: maxIncorrectGuesses,
+      stats: this.game.getStatistics(),
+    };
+
+    window.ShareSystem.showShareModal(shareData);
+  }
+
+  shareAchievements() {
+    if (!window.ShareSystem) {
+      window.ShareSystem = new ShareSystem();
+    }
+
+    const achievements = this.game.getAchievements();
+    const stats = this.game.getStatistics();
+    
+    const unlockedAchievements = Object.entries(achievements)
+      .filter(([key, value]) => value.unlocked)
+      .map(([key]) => {
+        const achievementNames = {
+          firstWin: "First Win",
+          streak5: "5-Game Streak",
+          streak10: "10-Game Streak",
+          perfectGame: "Perfect Game",
+          speedDemon: "Speed Demon",
+          difficultyMaster: "Difficulty Master",
+          categoryExplorer: "Category Explorer",
+          scoreHunter: "Score Hunter",
+        };
+        return achievementNames[key] || key;
+      });
+
+    const shareData = {
+      type: "achievements",
+      achievements: unlockedAchievements,
+      totalAchievements: Object.keys(achievements).length,
+      unlockedCount: unlockedAchievements.length,
+      stats: stats,
+    };
+
+    window.ShareSystem.showShareModal(shareData);
+  }
+
+  shareMultiplayerResult() {
+    if (!window.ShareSystem) {
+      window.ShareSystem = new ShareSystem();
+    }
+
+    const players = this.game.getMultiplayerScores();
+    const sortedPlayers = [...players].sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return b.wins - a.wins;
+    });
+
+    const shareData = {
+      type: "multiplayer_result",
+      players: sortedPlayers,
+      winner: sortedPlayers[0],
+    };
+
+    window.ShareSystem.showShareModal(shareData);
+  }
+
+  showShareModal(content) {
+    const modal = document.getElementById("share-modal");
+    const shareContent = document.getElementById("share-content");
+    if (!modal || !shareContent) return;
+
+    shareContent.innerHTML = content;
+    modal.classList.add("show");
+    document.body.style.overflow = "hidden";
+  }
+
+  hideShareModal() {
+    const modal = document.getElementById("share-modal");
+    if (modal) {
+      modal.classList.remove("show");
+      document.body.style.overflow = "";
+    }
   }
 
   handleLetterClick(keyElement) {

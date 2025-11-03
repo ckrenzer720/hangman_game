@@ -125,7 +125,10 @@
         <div class="modal-content">
           <h2 id="game-result"></h2>
           <p id="correct-word"></p>
-          <button class="btn" id="play-again">Play Again</button>
+          <div class="modal-actions" style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <button class="btn" id="play-again">Play Again</button>
+            <button class="btn btn-share" id="share-result">📤 Share Result</button>
+          </div>
         </div>
       </div>
 
@@ -162,6 +165,7 @@
             <!-- Achievements will be populated here -->
           </div>
           <div class="modal-actions">
+            <button class="btn btn-share" id="share-achievements">📤 Share Achievements</button>
             <button class="btn" id="close-achievements">Close</button>
           </div>
         </div>
@@ -240,8 +244,21 @@
             <!-- Winner comparison will be populated here -->
           </div>
           <div class="modal-actions">
+            <button class="btn btn-share" id="share-multiplayer-result">📤 Share Result</button>
             <button class="btn" id="multiplayer-play-again">Play Again</button>
             <button class="btn" id="multiplayer-end-game">End Game</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="share-modal" id="share-modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>📤 Share</h2>
+            <button class="btn btn-close" id="close-share">✕</button>
+          </div>
+          <div class="share-content" id="share-content">
+            <!-- Share options will be populated here -->
           </div>
         </div>
       </div>
@@ -252,6 +269,7 @@
     <script src="scripts/theme-manager.js"></script>
     <script src="scripts/help-system.js"></script>
     <script src="scripts/challenge-system.js"></script>
+    <script src="scripts/share-system.js"></script>
     <script src="scripts/game.js"></script>
     <script src="scripts/ui.js"></script>
     <script src="scripts/main.js"></script>
