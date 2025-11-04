@@ -693,9 +693,25 @@ class GameUI {
   // SHARE FUNCTIONALITY
   // ========================================
 
-  shareGameResult() {
+  async shareGameResult() {
+    // Load share system script lazily if not already loaded
     if (!window.ShareSystem) {
-      window.ShareSystem = new ShareSystem();
+      if (this.lazyLoader) {
+        try {
+          await this.lazyLoader.loadScript('scripts/share-system.js');
+        } catch (error) {
+          console.error('Failed to load share system:', error);
+          this.showFeedback('error', 'Failed to load share system. Please try again.');
+          return;
+        }
+      } else {
+        console.error('LazyLoader not available');
+        return;
+      }
+    }
+
+    if (!window.shareSystemInstance) {
+      window.shareSystemInstance = new ShareSystem();
     }
 
     const result = this.game.gameState.gameStatus === "won" ? "won" : "lost";
@@ -716,12 +732,28 @@ class GameUI {
       stats: this.game.getStatistics(),
     };
 
-    window.ShareSystem.showShareModal(shareData);
+    (window.shareSystemInstance || new ShareSystem()).showShareModal(shareData);
   }
 
-  shareAchievements() {
+  async shareAchievements() {
+    // Load share system script lazily if not already loaded
     if (!window.ShareSystem) {
-      window.ShareSystem = new ShareSystem();
+      if (this.lazyLoader) {
+        try {
+          await this.lazyLoader.loadScript('scripts/share-system.js');
+        } catch (error) {
+          console.error('Failed to load share system:', error);
+          this.showFeedback('error', 'Failed to load share system. Please try again.');
+          return;
+        }
+      } else {
+        console.error('LazyLoader not available');
+        return;
+      }
+    }
+
+    if (!window.shareSystemInstance) {
+      window.shareSystemInstance = new ShareSystem();
     }
 
     const achievements = this.game.getAchievements();
@@ -751,12 +783,28 @@ class GameUI {
       stats: stats,
     };
 
-    window.ShareSystem.showShareModal(shareData);
+    (window.shareSystemInstance || new ShareSystem()).showShareModal(shareData);
   }
 
-  shareMultiplayerResult() {
+  async shareMultiplayerResult() {
+    // Load share system script lazily if not already loaded
     if (!window.ShareSystem) {
-      window.ShareSystem = new ShareSystem();
+      if (this.lazyLoader) {
+        try {
+          await this.lazyLoader.loadScript('scripts/share-system.js');
+        } catch (error) {
+          console.error('Failed to load share system:', error);
+          this.showFeedback('error', 'Failed to load share system. Please try again.');
+          return;
+        }
+      } else {
+        console.error('LazyLoader not available');
+        return;
+      }
+    }
+
+    if (!window.shareSystemInstance) {
+      window.shareSystemInstance = new ShareSystem();
     }
 
     const players = this.game.getMultiplayerScores();
@@ -771,7 +819,7 @@ class GameUI {
       winner: sortedPlayers[0],
     };
 
-    window.ShareSystem.showShareModal(shareData);
+    (window.shareSystemInstance || new ShareSystem()).showShareModal(shareData);
   }
 
   showShareModal(content) {
@@ -2263,11 +2311,27 @@ class GameUI {
   /**
    * Shows the help modal
    */
-  showHelp() {
+  async showHelp() {
     const modal = document.getElementById("help-modal");
     const content = document.getElementById("help-content");
 
     if (!modal || !content) return;
+
+    // Load help system script lazily if not already loaded
+    if (!window.HelpSystem) {
+      if (this.lazyLoader) {
+        try {
+          await this.lazyLoader.loadScript('scripts/help-system.js');
+        } catch (error) {
+          console.error('Failed to load help system:', error);
+          this.showFeedback('error', 'Failed to load help system. Please try again.');
+          return;
+        }
+      } else {
+        console.error('LazyLoader not available');
+        return;
+      }
+    }
 
     // Initialize help system if not already done
     if (!window.helpSystem) {
@@ -2298,13 +2362,29 @@ class GameUI {
   /**
    * Shows the challenge modal
    */
-  showChallenge() {
+  async showChallenge() {
     const modal = document.getElementById("challenge-modal");
-    if (modal) {
-      modal.classList.add("show");
-      document.body.style.overflow = "hidden";
-      this.populateChallengeModal();
+    if (!modal) return;
+
+    // Load challenge system script lazily if not already loaded
+    if (!window.ChallengeSystem) {
+      if (this.lazyLoader) {
+        try {
+          await this.lazyLoader.loadScript('scripts/challenge-system.js');
+        } catch (error) {
+          console.error('Failed to load challenge system:', error);
+          this.showFeedback('error', 'Failed to load challenge system. Please try again.');
+          return;
+        }
+      } else {
+        console.error('LazyLoader not available');
+        return;
+      }
     }
+
+    modal.classList.add("show");
+    document.body.style.overflow = "hidden";
+    this.populateChallengeModal();
   }
 
   /**

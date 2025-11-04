@@ -4,12 +4,34 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Hangman Game</title>
+    <!-- Critical CSS - Load immediately -->
     <link rel="stylesheet" href="styles/main.css" />
     <link rel="stylesheet" href="styles/components.css" />
     <link rel="stylesheet" href="styles/responsive.css" />
-    <link rel="stylesheet" href="styles/dashboard.css" />
-    <link rel="stylesheet" href="styles/help.css" />
-    <link rel="stylesheet" href="styles/challenge.css" />
+    
+    <!-- Non-critical CSS - Load asynchronously -->
+    <link rel="preload" href="styles/dashboard.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="styles/help.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="styles/challenge.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript>
+      <link rel="stylesheet" href="styles/dashboard.css" />
+      <link rel="stylesheet" href="styles/help.css" />
+      <link rel="stylesheet" href="styles/challenge.css" />
+    </noscript>
+    <!-- Polyfill for async CSS loading (fallback for browsers that don't support preload) -->
+    <script>
+      (function() {
+        var links = document.querySelectorAll('link[rel="preload"][as="style"]');
+        for (var i = 0; i < links.length; i++) {
+          var link = links[i];
+          if (link.onload === null) {
+            link.onload = function() {
+              this.rel = 'stylesheet';
+            };
+          }
+        }
+      })();
+    </script>
   </head>
   <body>
     <div class="game-container">
@@ -264,14 +286,19 @@
       </div>
     </div>
 
+    <!-- Critical scripts - Load immediately -->
+    <script src="scripts/performance-monitor.js"></script>
+    <script src="scripts/lazy-loader.js"></script>
+    <script src="scripts/memory-optimizer.js"></script>
     <script src="scripts/error-middleware.js"></script>
     <script src="scripts/utils.js"></script>
     <script src="scripts/theme-manager.js"></script>
-    <script src="scripts/help-system.js"></script>
-    <script src="scripts/challenge-system.js"></script>
-    <script src="scripts/share-system.js"></script>
     <script src="scripts/game.js"></script>
     <script src="scripts/ui.js"></script>
+    
+    <!-- Non-critical scripts - Load lazily on demand -->
+    <!-- help-system.js, challenge-system.js, share-system.js will be loaded when needed -->
+    
     <script src="scripts/main.js"></script>
   </body>
 </html>

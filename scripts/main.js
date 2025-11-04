@@ -2,8 +2,32 @@
 // HANGMAN GAME - MAIN APPLICATION
 // ========================================
 
+// Initialize performance monitoring and optimization tools
+let performanceMonitor;
+let lazyLoader;
+let memoryOptimizer;
+
+// Initialize performance tools immediately (before DOM ready)
+if (typeof PerformanceMonitor !== 'undefined') {
+  performanceMonitor = new PerformanceMonitor({
+    enabled: true,
+    logToConsole: true,
+    trackMemory: true
+  });
+  performanceMonitor.mark('app-start');
+}
+
+if (typeof LazyLoader !== 'undefined') {
+  lazyLoader = new LazyLoader();
+}
+
+if (typeof MemoryOptimizer !== 'undefined') {
+  memoryOptimizer = new MemoryOptimizer();
+}
+
 // Wait for DOM to be fully loaded
 document.addEventListener("DOMContentLoaded", async function () {
+  performanceMonitor?.mark('dom-ready');
   console.log("Hangman Game - Initializing...");
 
   // Initialize error middleware
@@ -16,43 +40,90 @@ document.addEventListener("DOMContentLoaded", async function () {
   });
 
   errorMiddleware.init();
+  performanceMonitor?.mark('error-middleware-init');
 
   // Initialize theme manager
   const themeManager = new ThemeManager();
+  performanceMonitor?.mark('theme-manager-init');
 
   try {
+    performanceMonitor?.mark('game-init-start');
+    
     // Initialize the game with error handling
     const game = await errorMiddleware.handleAsyncError(
       () => {
         const gameInstance = new HangmanGame();
         gameInstance.errorMiddleware = errorMiddleware;
+        // Inject memory optimizer if available
+        if (memoryOptimizer) {
+          gameInstance.memoryOptimizer = memoryOptimizer;
+        }
         return gameInstance;
       },
       "game_initialization",
       { retryCount: 0, isOffline: NetworkUtils.isOffline() }
     );
+    performanceMonitor?.mark('game-init-complete');
+    performanceMonitor?.measure('game-initialization', 'game-init-start', 'game-init-complete');
 
     // Wait for words to be loaded before initializing UI
+    performanceMonitor?.mark('word-loading-start');
     await errorMiddleware.handleAsyncError(
       () => waitForWordsLoaded(game),
       "word_loading",
       { timeout: 5000 }
     );
+    performanceMonitor?.mark('word-loading-complete');
+    performanceMonitor?.measure('word-loading', 'word-loading-start', 'word-loading-complete');
 
     console.log("Words loaded, initializing UI...");
 
     // Initialize UI with error handling
+    performanceMonitor?.mark('ui-init-start');
     const ui = await errorMiddleware.handleAsyncError(
-      () => initializeUI(game),
+      () => {
+        const uiInstance = initializeUI(game);
+        // Inject lazy loader and memory optimizer if available
+        if (lazyLoader) {
+          uiInstance.lazyLoader = lazyLoader;
+        }
+        if (memoryOptimizer) {
+          uiInstance.memoryOptimizer = memoryOptimizer;
+        }
+        return uiInstance;
+      },
       "ui_initialization",
       {}
     );
+    performanceMonitor?.mark('ui-init-complete');
+    performanceMonitor?.measure('ui-initialization', 'ui-init-start', 'ui-init-complete');
 
     // Make game and UI globally accessible for debugging
     window.game = game;
     window.ui = ui;
     window.errorMiddleware = errorMiddleware;
     window.themeManager = themeManager;
+    window.performanceMonitor = performanceMonitor;
+    window.lazyLoader = lazyLoader;
+    window.memoryOptimizer = memoryOptimizer;
+
+    // Capture final initialization metrics
+    performanceMonitor?.mark('app-ready');
+    performanceMonitor?.measure('total-init-time', 'app-start', 'app-ready');
+    
+    // Log performance report
+    if (performanceMonitor) {
+      const bundleSize = performanceMonitor.getBundleSize();
+      performanceMonitor.trackMetric('bundleSize', bundleSize);
+      
+      setTimeout(() => {
+        performanceMonitor.logReport();
+        console.log('📦 Bundle Size:', bundleSize);
+        if (memoryOptimizer) {
+          console.log('💾 Memory Stats:', memoryOptimizer.getStats());
+        }
+      }, 1000);
+    }
 
     console.log("Hangman Game - Ready to play!");
     console.log("Game state:", game.gameState);
@@ -115,12 +186,17 @@ function waitForWordsLoaded(game) {
  * @returns {GameUI} - UI instance
  */
 function initializeUI(game) {
+  // Use memory optimizer for DOM queries if available
+  const querySelector = memoryOptimizer 
+    ? (sel, ctx) => memoryOptimizer.querySelector(sel, ctx)
+    : (sel, ctx) => ctx.querySelector(sel);
+  
   // Hide loading indicator and show game
-  const loadingIndicator = document.getElementById("loading-indicator");
-  const hangmanSection = document.getElementById("hangman-section");
-  const wordSection = document.querySelector(".word-section");
-  const keyboardSection = document.querySelector(".keyboard-section");
-  const controlsSection = document.querySelector(".controls-section");
+  const loadingIndicator = querySelector("#loading-indicator", document);
+  const hangmanSection = querySelector("#hangman-section", document);
+  const wordSection = querySelector(".word-section", document);
+  const keyboardSection = querySelector(".keyboard-section", document);
+  const controlsSection = querySelector(".controls-section", document);
 
   if (loadingIndicator) loadingIndicator.style.display = "none";
   if (hangmanSection) hangmanSection.style.display = "flex";
