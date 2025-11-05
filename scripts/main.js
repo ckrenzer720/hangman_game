@@ -6,6 +6,8 @@
 let performanceMonitor;
 let lazyLoader;
 let memoryOptimizer;
+let cacheManager;
+let offlineManager;
 
 // Initialize performance tools immediately (before DOM ready)
 if (typeof PerformanceMonitor !== 'undefined') {
@@ -23,6 +25,23 @@ if (typeof LazyLoader !== 'undefined') {
 
 if (typeof MemoryOptimizer !== 'undefined') {
   memoryOptimizer = new MemoryOptimizer();
+}
+
+// Initialize cache manager and offline manager
+if (typeof CacheManager !== 'undefined') {
+  cacheManager = new CacheManager({
+    version: '1.0.0',
+    defaultExpiration: 7 * 24 * 60 * 60 * 1000, // 7 days
+    maxCacheSize: 5 * 1024 * 1024 // 5MB
+  });
+}
+
+if (typeof OfflineManager !== 'undefined') {
+  offlineManager = new OfflineManager({
+    cacheManager: cacheManager,
+    retryInterval: 5000,
+    maxRetries: 3
+  });
 }
 
 // Wait for DOM to be fully loaded
@@ -44,6 +63,10 @@ document.addEventListener("DOMContentLoaded", async function () {
 
   // Initialize theme manager
   const themeManager = new ThemeManager();
+  // Inject cache manager into theme manager
+  if (cacheManager) {
+    themeManager.cacheManager = cacheManager;
+  }
   performanceMonitor?.mark('theme-manager-init');
 
   try {
@@ -57,6 +80,14 @@ document.addEventListener("DOMContentLoaded", async function () {
         // Inject memory optimizer if available
         if (memoryOptimizer) {
           gameInstance.memoryOptimizer = memoryOptimizer;
+        }
+        // Inject cache manager if available
+        if (cacheManager) {
+          gameInstance.cacheManager = cacheManager;
+        }
+        // Inject offline manager if available
+        if (offlineManager) {
+          gameInstance.offlineManager = offlineManager;
         }
         return gameInstance;
       },
@@ -106,6 +137,8 @@ document.addEventListener("DOMContentLoaded", async function () {
     window.performanceMonitor = performanceMonitor;
     window.lazyLoader = lazyLoader;
     window.memoryOptimizer = memoryOptimizer;
+    window.cacheManager = cacheManager;
+    window.offlineManager = offlineManager;
 
     // Capture final initialization metrics
     performanceMonitor?.mark('app-ready');

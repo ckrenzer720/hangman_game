@@ -131,35 +131,53 @@ class HangmanGame {
 
   async loadWords() {
     try {
-      // Check if we're offline first
-      if (NetworkUtils.isOffline()) {
-        throw new Error("Network connection lost");
-      }
-
-      // Try to load from cache first
+      // Try to load from cache first (even if online)
       const cachedWords = this.loadCachedWords();
-      if (cachedWords && !this.isOfflineMode) {
+      if (cachedWords) {
         this.wordLists = cachedWords;
         this.wordsLoaded = true;
         console.log("Words loaded from cache:", this.wordLists);
         this.init();
+        
+        // If online, try to update cache in background
+        if (this.offlineManager && this.offlineManager.isCurrentlyOnline()) {
+          this.updateWordsInBackground();
+        }
         return;
       }
 
-      // Try to fetch from server with timeout and retry logic
-      const response = await NetworkUtils.retryWithBackoff(
-        async () => {
-          return await NetworkUtils.fetchWithTimeout(
-            "data/words.json",
-            {},
-            10000
-          );
-        },
-        this.maxRetries,
-        1000
-      );
+      // Check if we're offline
+      if (this.offlineManager && !this.offlineManager.isCurrentlyOnline()) {
+        throw new Error("Network connection lost");
+      }
 
-      this.wordLists = await response.json();
+      if (NetworkUtils.isOffline()) {
+        throw new Error("Network connection lost");
+      }
+
+      // Try to fetch from server with timeout and retry logic
+      // Use offline manager if available
+      if (this.offlineManager) {
+        this.wordLists = await this.offlineManager.fetchWithFallback(
+          "data/words.json",
+          {},
+          "words"
+        );
+      } else {
+        const response = await NetworkUtils.retryWithBackoff(
+          async () => {
+            return await NetworkUtils.fetchWithTimeout(
+              "data/words.json",
+              {},
+              10000
+            );
+          },
+          this.maxRetries,
+          1000
+        );
+        this.wordLists = await response.json();
+      }
+
       this.wordsLoaded = true;
       this.isOfflineMode = false;
       this.retryCount = 0;
@@ -224,10 +242,19 @@ class HangmanGame {
   }
 
   /**
-   * Loads cached words from localStorage
+   * Loads cached words from cache manager or localStorage fallback
    * @returns {Object|null} - Cached word list or null
    */
   loadCachedWords() {
+    // Use cache manager if available
+    if (this.cacheManager && this.cacheManager.isStorageAvailable()) {
+      const cached = this.cacheManager.get('words');
+      if (cached) {
+        return cached;
+      }
+    }
+
+    // Fallback to old localStorage method for migration
     if (!GameUtils.isLocalStorageAvailable()) return null;
 
     try {
@@ -240,6 +267,12 @@ class HangmanGame {
           cacheTime &&
           Date.now() - parseInt(cacheTime) < 24 * 60 * 60 * 1000
         ) {
+          // Migrate to cache manager if available
+          if (this.cacheManager) {
+            this.cacheManager.set('words', parsed, {
+              expiration: 24 * 60 * 60 * 1000
+            });
+          }
           return parsed;
         }
       }
@@ -250,10 +283,23 @@ class HangmanGame {
   }
 
   /**
-   * Caches words to localStorage
+   * Caches words using cache manager or localStorage fallback
    * @param {Object} words - Word list to cache
    */
   cacheWords(words) {
+    // Use cache manager if available
+    if (this.cacheManager && this.cacheManager.isStorageAvailable()) {
+      this.cacheManager.set('words', words, {
+        expiration: 7 * 24 * 60 * 60 * 1000, // 7 days
+        metadata: { 
+          source: 'server',
+          cachedAt: Date.now()
+        }
+      });
+      return;
+    }
+
+    // Fallback to old localStorage method
     if (!GameUtils.isLocalStorageAvailable()) return;
 
     try {
@@ -261,6 +307,32 @@ class HangmanGame {
       localStorage.setItem("hangman_words_cache_time", Date.now().toString());
     } catch (error) {
       console.warn("Error caching words:", error);
+    }
+  }
+
+  /**
+   * Update words in background without blocking the UI
+   */
+  async updateWordsInBackground() {
+    if (!this.offlineManager || !this.offlineManager.isCurrentlyOnline()) {
+      return;
+    }
+
+    try {
+      const response = await NetworkUtils.fetchWithTimeout(
+        "data/words.json",
+        {},
+        10000
+      );
+      
+      if (response.ok) {
+        const words = await response.json();
+        this.cacheWords(words);
+        console.log("Words cache updated in background");
+      }
+    } catch (error) {
+      console.debug("Background word update failed:", error);
+      // Silently fail - we already have cached words
     }
   }
 
@@ -1179,6 +1251,15 @@ class HangmanGame {
   // ========================================
 
   loadStatistics() {
+    // Use cache manager if available
+    if (this.cacheManager && this.cacheManager.isStorageAvailable()) {
+      const cached = this.cacheManager.get('statistics');
+      if (cached && this.validateStatisticsStructure(cached)) {
+        return cached;
+      }
+    }
+
+    // Fallback to old localStorage method
     return GameUtils.safeExecute(
       () => {
         if (!GameUtils.isLocalStorageAvailable()) {
@@ -1190,12 +1271,16 @@ class HangmanGame {
           const parsed = JSON.parse(savedStats);
           // Validate the structure
           if (this.validateStatisticsStructure(parsed)) {
+            // Migrate to cache manager if available
+            if (this.cacheManager) {
+              this.cacheManager.set('statistics', parsed);
+            }
             return parsed;
           } else {
             throw new Error("Invalid statistics structure");
           }
         }
-        throw new Error("No saved statistics found");
+        return this.getDefaultStatistics();
       },
       "loadStatistics",
       this.getDefaultStatistics()
@@ -1307,6 +1392,26 @@ class HangmanGame {
   }
 
   saveStatistics() {
+    // Use cache manager if available
+    if (this.cacheManager && this.cacheManager.isStorageAvailable()) {
+      const success = this.cacheManager.set('statistics', this.statistics, {
+        metadata: {
+          lastSaved: Date.now(),
+          version: this.statistics.version || '1.0.0'
+        }
+      });
+      
+      if (success) {
+        // Also save backup
+        this.cacheManager.set('statistics_backup', this.statistics, {
+          expiration: 30 * 24 * 60 * 60 * 1000, // 30 days
+          metadata: { isBackup: true }
+        });
+        return;
+      }
+    }
+
+    // Fallback to old localStorage method
     const success = GameUtils.safeExecute(
       () => {
         if (!GameUtils.isLocalStorageAvailable()) {

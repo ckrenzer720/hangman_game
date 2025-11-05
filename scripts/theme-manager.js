@@ -118,12 +118,30 @@ class ThemeManager {
   }
 
   loadSettings() {
+    // Use cache manager if available
+    if (this.cacheManager && this.cacheManager.isStorageAvailable()) {
+      const cached = this.cacheManager.get('settings');
+      if (cached) {
+        this.settings = { ...this.settings, ...cached };
+        this.currentTheme = this.settings.theme;
+        this.currentFontSize = this.settings.fontSize;
+        return;
+      }
+    }
+
+    // Fallback to old localStorage method
     try {
       const savedSettings = localStorage.getItem("hangman-theme-settings");
       if (savedSettings) {
-        this.settings = { ...this.settings, ...JSON.parse(savedSettings) };
+        const parsed = JSON.parse(savedSettings);
+        this.settings = { ...this.settings, ...parsed };
         this.currentTheme = this.settings.theme;
         this.currentFontSize = this.settings.fontSize;
+        
+        // Migrate to cache manager if available
+        if (this.cacheManager) {
+          this.cacheManager.set('settings', parsed);
+        }
       }
     } catch (error) {
       console.warn("Failed to load theme settings:", error);
@@ -131,6 +149,17 @@ class ThemeManager {
   }
 
   saveSettings() {
+    // Use cache manager if available
+    if (this.cacheManager && this.cacheManager.isStorageAvailable()) {
+      this.cacheManager.set('settings', this.settings, {
+        metadata: {
+          lastSaved: Date.now()
+        }
+      });
+      return;
+    }
+
+    // Fallback to old localStorage method
     try {
       localStorage.setItem(
         "hangman-theme-settings",
