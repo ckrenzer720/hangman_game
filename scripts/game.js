@@ -926,6 +926,12 @@ class HangmanGame {
     if (this.gameState.gameStatus === "playing" && !this.gameState.isPaused) {
       this.gameState.isPaused = true;
       this.gameState.gameStatus = "paused";
+      
+      // Save progress when pausing
+      if (this.progressManager) {
+        this.progressManager.saveProgress(this.gameState, this);
+      }
+      
       return true;
     }
     return false;
@@ -1402,11 +1408,18 @@ class HangmanGame {
       });
       
       if (success) {
-        // Also save backup
-        this.cacheManager.set('statistics_backup', this.statistics, {
-          expiration: 30 * 24 * 60 * 60 * 1000, // 30 days
-          metadata: { isBackup: true }
-        });
+        // Also save backup periodically (every 10th save)
+        if (!this._statisticsSaveCount) {
+          this._statisticsSaveCount = 0;
+        }
+        this._statisticsSaveCount++;
+        
+        if (this._statisticsSaveCount % 10 === 0) {
+          this.cacheManager.set('statistics_backup', this.statistics, {
+            expiration: 30 * 24 * 60 * 60 * 1000, // 30 days
+            metadata: { isBackup: true }
+          });
+        }
         return;
       }
     }

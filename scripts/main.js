@@ -28,6 +28,9 @@ if (typeof MemoryOptimizer !== 'undefined') {
 }
 
 // Initialize cache manager and offline manager
+let progressManager;
+let preferencesManager;
+
 if (typeof CacheManager !== 'undefined') {
   cacheManager = new CacheManager({
     version: '1.0.0',
@@ -41,6 +44,20 @@ if (typeof OfflineManager !== 'undefined') {
     cacheManager: cacheManager,
     retryInterval: 5000,
     maxRetries: 3
+  });
+}
+
+if (typeof ProgressManager !== 'undefined') {
+  progressManager = new ProgressManager({
+    cacheManager: cacheManager,
+    autoSaveInterval: 30000,
+    autoSaveEnabled: true
+  });
+}
+
+if (typeof PreferencesManager !== 'undefined') {
+  preferencesManager = new PreferencesManager({
+    cacheManager: cacheManager
   });
 }
 
@@ -88,6 +105,16 @@ document.addEventListener("DOMContentLoaded", async function () {
         // Inject offline manager if available
         if (offlineManager) {
           gameInstance.offlineManager = offlineManager;
+        }
+        // Inject progress manager if available
+        if (progressManager) {
+          gameInstance.progressManager = progressManager;
+          // Start auto-save
+          progressManager.startAutoSave(() => gameInstance.gameState, gameInstance);
+        }
+        // Inject preferences manager if available
+        if (preferencesManager) {
+          gameInstance.preferencesManager = preferencesManager;
         }
         return gameInstance;
       },
@@ -139,6 +166,8 @@ document.addEventListener("DOMContentLoaded", async function () {
     window.memoryOptimizer = memoryOptimizer;
     window.cacheManager = cacheManager;
     window.offlineManager = offlineManager;
+    window.progressManager = progressManager;
+    window.preferencesManager = preferencesManager;
 
     // Capture final initialization metrics
     performanceMonitor?.mark('app-ready');

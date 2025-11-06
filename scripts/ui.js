@@ -186,6 +186,18 @@ class GameUI {
       resetSettingsBtn.addEventListener("click", () => this.resetSettings());
     }
 
+    // Backup Data Button
+    const backupDataBtn = document.getElementById("backup-data");
+    if (backupDataBtn) {
+      backupDataBtn.addEventListener("click", () => this.backupData());
+    }
+
+    // Restore Data Button
+    const restoreDataBtn = document.getElementById("restore-data");
+    if (restoreDataBtn) {
+      restoreDataBtn.addEventListener("click", () => this.restoreData());
+    }
+
     // Help Button handlers
     const closeHelpBtn = document.getElementById("close-help");
     if (closeHelpBtn) {
@@ -2757,6 +2769,157 @@ class GameUI {
         this.showFeedback("info", `Category changed to ${category}`);
       }
     });
+  }
+
+  /**
+   * Backup all game data
+   */
+  backupData() {
+    if (!window.cacheManager || !window.cacheManager.isStorageAvailable()) {
+      this.showFeedback('error', 'Backup not available - storage not accessible');
+      return;
+    }
+
+    try {
+      // Export all important data
+      const backup = {
+        version: '1.0.0',
+        timestamp: Date.now(),
+        data: {}
+      };
+
+      // Backup statistics
+      if (window.game && window.game.statistics) {
+        backup.data.statistics = window.cacheManager.get('statistics');
+      }
+
+      // Backup preferences
+      if (window.preferencesManager) {
+        backup.data.preferences = window.preferencesManager.export();
+      }
+
+      // Backup settings
+      if (window.themeManager) {
+        backup.data.settings = window.cacheManager.get('settings');
+      }
+
+      // Backup progress
+      if (window.progressManager) {
+        const progress = window.progressManager.loadProgress();
+        if (progress) {
+          backup.data.progress = progress;
+        }
+      }
+
+      // Convert to JSON string
+      const backupJson = JSON.stringify(backup, null, 2);
+      
+      // Create download link
+      const blob = new Blob([backupJson], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `hangman-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      this.showFeedback('success', 'Backup downloaded successfully!');
+    } catch (error) {
+      console.error('Error creating backup:', error);
+      this.showFeedback('error', 'Failed to create backup: ' + error.message);
+    }
+  }
+
+  /**
+   * Restore game data from backup
+   */
+  restoreData() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.style.display = 'none';
+    
+    input.onchange = (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const backup = JSON.parse(e.target.result);
+          
+          if (!backup || !backup.data) {
+            throw new Error('Invalid backup file format');
+          }
+
+          // Confirm restore
+          if (!confirm('This will overwrite your current data. Are you sure?')) {
+            return;
+          }
+
+          let restored = 0;
+
+          // Restore statistics
+          if (backup.data.statistics && window.game && window.cacheManager) {
+            if (window.game.validateStatisticsStructure(backup.data.statistics)) {
+              window.cacheManager.set('statistics', backup.data.statistics);
+              window.game.statistics = backup.data.statistics;
+              restored++;
+            }
+          }
+
+          // Restore preferences
+          if (backup.data.preferences && window.preferencesManager) {
+            if (window.preferencesManager.import(backup.data.preferences)) {
+              restored++;
+            }
+          }
+
+          // Restore settings
+          if (backup.data.settings && window.cacheManager && window.themeManager) {
+            window.cacheManager.set('settings', backup.data.settings);
+            window.themeManager.loadSettings();
+            window.themeManager.applyTheme();
+            restored++;
+          }
+
+          // Restore progress
+          if (backup.data.progress && window.progressManager) {
+            if (window.progressManager.validateProgress(backup.data.progress)) {
+              window.cacheManager.set('current_progress', backup.data.progress);
+              restored++;
+            }
+          }
+
+          if (restored > 0) {
+            this.showFeedback('success', `Restored ${restored} data item(s) successfully!`);
+            // Reload page to apply changes
+            setTimeout(() => {
+              if (confirm('Page will reload to apply changes. Continue?')) {
+                location.reload();
+              }
+            }, 1000);
+          } else {
+            this.showFeedback('warning', 'No valid data found in backup file');
+          }
+        } catch (error) {
+          console.error('Error restoring backup:', error);
+          this.showFeedback('error', 'Failed to restore backup: ' + error.message);
+        }
+      };
+
+      reader.onerror = () => {
+        this.showFeedback('error', 'Failed to read backup file');
+      };
+
+      reader.readAsText(file);
+    };
+
+    document.body.appendChild(input);
+    input.click();
+    document.body.removeChild(input);
   }
 }
 
