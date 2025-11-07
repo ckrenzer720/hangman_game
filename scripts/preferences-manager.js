@@ -52,6 +52,15 @@ class PreferencesManager {
     if (this.cacheManager && this.cacheManager.isStorageAvailable()) {
       const cached = this.cacheManager.get('preferences');
       if (cached) {
+        // Validate settings if validator available
+        if (this.dataValidator) {
+          const validation = this.dataValidator.validateSettings(cached);
+          if (validation.recovered && validation.fixes.length > 0) {
+            console.log('Preferences were automatically fixed:', validation.fixes);
+            // Save fixed preferences
+            this.cacheManager.set('preferences', cached);
+          }
+        }
         this.preferences = { ...this.defaultPreferences, ...cached };
         return;
       }
@@ -198,6 +207,21 @@ class PreferencesManager {
    * @returns {Object} Validation result
    */
   validate() {
+    // Use data validator if available
+    if (this.dataValidator) {
+      const validation = this.dataValidator.validateSettings(this.preferences);
+      if (validation.recovered && validation.fixes.length > 0) {
+        // Auto-save if preferences were fixed
+        this.savePreferences();
+      }
+      return {
+        valid: validation.valid,
+        errors: validation.errors,
+        warnings: validation.warnings
+      };
+    }
+
+    // Fallback to basic validation
     const errors = [];
     const warnings = [];
 

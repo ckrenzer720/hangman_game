@@ -134,16 +134,40 @@ class HangmanGame {
       // Try to load from cache first (even if online)
       const cachedWords = this.loadCachedWords();
       if (cachedWords) {
-        this.wordLists = cachedWords;
-        this.wordsLoaded = true;
-        console.log("Words loaded from cache:", this.wordLists);
-        this.init();
-        
-        // If online, try to update cache in background
-        if (this.offlineManager && this.offlineManager.isCurrentlyOnline()) {
-          this.updateWordsInBackground();
+        // Validate cached words
+        if (this.dataValidator) {
+          const validation = this.dataValidator.validateWordList(cachedWords);
+          if (!validation.valid && validation.errors.length > 0) {
+            console.warn('Cached word list validation failed, fetching fresh data');
+            // Continue to fetch fresh data
+          } else {
+            if (validation.recovered) {
+              console.log('Cached word list was automatically recovered');
+              this.cacheWords(cachedWords); // Save recovered version
+            }
+            this.wordLists = cachedWords;
+            this.wordsLoaded = true;
+            console.log("Words loaded from cache:", this.wordLists);
+            this.init();
+            
+            // If online, try to update cache in background
+            if (this.offlineManager && this.offlineManager.isCurrentlyOnline()) {
+              this.updateWordsInBackground();
+            }
+            return;
+          }
+        } else {
+          this.wordLists = cachedWords;
+          this.wordsLoaded = true;
+          console.log("Words loaded from cache:", this.wordLists);
+          this.init();
+          
+          // If online, try to update cache in background
+          if (this.offlineManager && this.offlineManager.isCurrentlyOnline()) {
+            this.updateWordsInBackground();
+          }
+          return;
         }
-        return;
       }
 
       // Check if we're offline
@@ -176,6 +200,23 @@ class HangmanGame {
           1000
         );
         this.wordLists = await response.json();
+      }
+
+      // Validate word list
+      if (this.dataValidator) {
+        const validation = this.dataValidator.validateWordList(this.wordLists);
+        if (!validation.valid) {
+          console.warn('Word list validation errors:', validation.errors);
+          if (validation.errors.length > 0 && this.strictMode !== false) {
+            throw new Error('Word list validation failed: ' + validation.errors.join(', '));
+          }
+        }
+        if (validation.warnings.length > 0) {
+          console.warn('Word list validation warnings:', validation.warnings);
+        }
+        if (validation.recovered) {
+          console.log('Word list was automatically recovered');
+        }
       }
 
       this.wordsLoaded = true;
@@ -1260,8 +1301,23 @@ class HangmanGame {
     // Use cache manager if available
     if (this.cacheManager && this.cacheManager.isStorageAvailable()) {
       const cached = this.cacheManager.get('statistics');
-      if (cached && this.validateStatisticsStructure(cached)) {
-        return cached;
+      if (cached) {
+        // Validate with data validator if available
+        if (this.dataValidator) {
+          const validation = this.dataValidator.validateStatistics(cached);
+          if (validation.valid || validation.recovered) {
+            if (validation.recovered && validation.fixes.length > 0) {
+              console.log('Statistics were automatically fixed:', validation.fixes);
+              // Save fixed statistics
+              this.cacheManager.set('statistics', cached);
+            }
+            return cached;
+          } else {
+            console.warn('Statistics validation failed, using defaults');
+          }
+        } else if (this.validateStatisticsStructure(cached)) {
+          return cached;
+        }
       }
     }
 
@@ -1275,8 +1331,23 @@ class HangmanGame {
         const savedStats = localStorage.getItem("hangmanStatistics");
         if (savedStats) {
           const parsed = JSON.parse(savedStats);
-          // Validate the structure
-          if (this.validateStatisticsStructure(parsed)) {
+          
+          // Validate with data validator if available
+          if (this.dataValidator) {
+            const validation = this.dataValidator.validateStatistics(parsed);
+            if (validation.valid || validation.recovered) {
+              if (validation.recovered && validation.fixes.length > 0) {
+                console.log('Statistics were automatically fixed:', validation.fixes);
+              }
+              // Migrate to cache manager if available
+              if (this.cacheManager) {
+                this.cacheManager.set('statistics', parsed);
+              }
+              return parsed;
+            } else {
+              console.warn('Statistics validation failed:', validation.errors);
+            }
+          } else if (this.validateStatisticsStructure(parsed)) {
             // Migrate to cache manager if available
             if (this.cacheManager) {
               this.cacheManager.set('statistics', parsed);
@@ -1299,6 +1370,13 @@ class HangmanGame {
    * @returns {boolean} - True if valid
    */
   validateStatisticsStructure(stats) {
+    // Use data validator if available for comprehensive validation
+    if (this.dataValidator) {
+      const validation = this.dataValidator.validateStatistics(stats);
+      return validation.valid;
+    }
+
+    // Fallback to basic structure check
     const requiredFields = [
       "gamesPlayed",
       "gamesWon",

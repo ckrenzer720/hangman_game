@@ -30,6 +30,7 @@ if (typeof MemoryOptimizer !== 'undefined') {
 // Initialize cache manager and offline manager
 let progressManager;
 let preferencesManager;
+let dataValidator;
 
 if (typeof CacheManager !== 'undefined') {
   cacheManager = new CacheManager({
@@ -58,6 +59,14 @@ if (typeof ProgressManager !== 'undefined') {
 if (typeof PreferencesManager !== 'undefined') {
   preferencesManager = new PreferencesManager({
     cacheManager: cacheManager
+  });
+}
+
+// Initialize data validator
+if (typeof DataValidator !== 'undefined') {
+  dataValidator = new DataValidator({
+    strictMode: false,
+    autoRecover: true
   });
 }
 
@@ -115,6 +124,15 @@ document.addEventListener("DOMContentLoaded", async function () {
         // Inject preferences manager if available
         if (preferencesManager) {
           gameInstance.preferencesManager = preferencesManager;
+          preferencesManager.dataValidator = dataValidator;
+        }
+        // Inject data validator if available
+        if (dataValidator) {
+          gameInstance.dataValidator = dataValidator;
+        }
+        // Inject data validator into cache manager
+        if (cacheManager && dataValidator) {
+          cacheManager.setDataValidator(dataValidator);
         }
         return gameInstance;
       },
@@ -168,6 +186,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     window.offlineManager = offlineManager;
     window.progressManager = progressManager;
     window.preferencesManager = preferencesManager;
+    window.dataValidator = dataValidator;
 
     // Capture final initialization metrics
     performanceMonitor?.mark('app-ready');

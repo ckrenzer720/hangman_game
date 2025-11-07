@@ -20,6 +20,9 @@ class CacheManager {
       deletes: 0,
       errors: 0
     };
+    
+    this.dataValidator = null;
+    this.autoRecover = options.autoRecover !== false;
 
     this.init();
   }
@@ -153,6 +156,32 @@ class CacheManager {
       if (cacheEntry.version !== this.version) {
         console.warn(`[CacheManager] Version mismatch for ${key}: cached=${cacheEntry.version}, current=${this.version}`);
         // Still return value, but consider it stale
+      }
+
+      // Validate data if validator available
+      if (this.dataValidator && cacheEntry.value) {
+        let validation = null;
+        if (key === 'words') {
+          validation = this.dataValidator.validateWordList(cacheEntry.value);
+        } else if (key === 'statistics') {
+          validation = this.dataValidator.validateStatistics(cacheEntry.value);
+        } else if (key === 'settings' || key === 'preferences') {
+          validation = this.dataValidator.validateSettings(cacheEntry.value);
+        }
+
+        if (validation && !validation.valid && validation.errors.length > 0) {
+          console.warn(`[CacheManager] Validation failed for ${key}:`, validation.errors);
+          // Try to recover if possible
+          if (validation.recovered && this.autoRecover !== false) {
+            console.log(`[CacheManager] Auto-recovered ${key}`);
+            this.set(key, cacheEntry.value); // Save recovered version
+          } else {
+            // Data is corrupted and can't be recovered
+            this.delete(key);
+            this.cacheStats.misses++;
+            return defaultValue;
+          }
+        }
       }
 
       this.cacheStats.hits++;
@@ -585,6 +614,14 @@ class CacheManager {
     } catch (error) {
       return false;
     }
+  }
+
+  /**
+   * Set data validator
+   * @param {DataValidator} validator - Data validator instance
+   */
+  setDataValidator(validator) {
+    this.dataValidator = validator;
   }
 }
 
