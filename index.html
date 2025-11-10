@@ -34,254 +34,264 @@
     </script>
   </head>
   <body>
+    <!-- Screen reader only live regions -->
+    <div id="aria-status" role="status" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+    <div id="aria-alert" role="alert" aria-live="assertive" aria-atomic="true" class="sr-only"></div>
+    <div id="aria-log" role="log" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+    
     <div class="game-container">
-      <header class="game-header">
+      <header class="game-header" role="banner">
         <h1>Hangman Game</h1>
 
         <!-- Progress Indicators -->
-        <div class="progress-indicators">
+        <div class="progress-indicators" role="region" aria-label="Game progress and statistics">
           <div class="progress-group">
-            <div class="progress-label">Game Progress</div>
+            <div class="progress-label" id="progress-label">Game Progress</div>
             <div class="progress-bar-container">
-              <div class="progress-bar" id="game-progress-bar">
+              <div class="progress-bar" id="game-progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-labelledby="progress-label">
                 <div class="progress-fill" id="game-progress-fill"></div>
               </div>
-              <div class="progress-text" id="game-progress-text">0%</div>
+              <div class="progress-text" id="game-progress-text" aria-hidden="true">0%</div>
             </div>
           </div>
 
-          <div class="stats-row">
-            <div class="stat-indicator">
-              <div class="stat-icon">🎯</div>
+          <div class="stats-row" role="list">
+            <div class="stat-indicator" role="listitem">
+              <div class="stat-icon" aria-hidden="true">🎯</div>
               <div class="stat-content">
                 <div class="stat-label">Difficulty</div>
                 <div
                   class="stat-value difficulty-indicator"
                   id="difficulty-indicator"
+                  aria-label="Current difficulty level"
                 >
                   Medium
                 </div>
               </div>
             </div>
 
-            <div class="stat-indicator">
-              <div class="stat-icon">🔥</div>
+            <div class="stat-indicator" role="listitem">
+              <div class="stat-icon" aria-hidden="true">🔥</div>
               <div class="stat-content">
                 <div class="stat-label">Streak</div>
-                <div class="stat-value streak-indicator" id="streak-indicator">
+                <div class="stat-value streak-indicator" id="streak-indicator" aria-label="Current win streak">
                   0
                 </div>
               </div>
             </div>
 
-            <div class="stat-indicator">
-              <div class="stat-icon">⭐</div>
+            <div class="stat-indicator" role="listitem">
+              <div class="stat-icon" aria-hidden="true">⭐</div>
               <div class="stat-content">
                 <div class="stat-label">Score</div>
-                <div class="stat-value score-display" id="score-display">0</div>
+                <div class="stat-value score-display" id="score-display" aria-label="Current game score">
+                  0
+                </div>
               </div>
             </div>
           </div>
 
           <!-- Multiplayer Player Indicator -->
-          <div class="multiplayer-indicator" id="multiplayer-indicator" style="display: none;">
+          <div class="multiplayer-indicator" id="multiplayer-indicator" style="display: none;" role="region" aria-label="Multiplayer game information">
             <div class="current-player-display">
               <div class="player-label">Current Player</div>
-              <div class="player-name" id="current-player-name"></div>
+              <div class="player-name" id="current-player-name" aria-live="polite"></div>
             </div>
-            <div class="player-scores" id="player-scores">
+            <div class="player-scores" id="player-scores" role="list" aria-label="Player scores">
               <!-- Player scores will be populated here -->
             </div>
           </div>
         </div>
       </header>
 
-      <main class="game-main">
+      <main class="game-main" id="main-content" role="main" tabindex="-1">
         <!-- Loading indicator -->
-        <div id="loading-indicator" class="loading-section">
-          <div class="loading-spinner"></div>
+        <div id="loading-indicator" class="loading-section" role="status" aria-live="polite" aria-label="Loading game">
+          <div class="loading-spinner" aria-hidden="true"></div>
           <p>Loading words...</p>
         </div>
 
-        <div class="hangman-section" id="hangman-section" style="display: none">
+        <div class="hangman-section" id="hangman-section" style="display: none" role="img" aria-label="Hangman figure">
           <div class="hangman-figure" id="hangman">
             <!-- Gallows structure -->
-            <div class="beam"></div>
-            <div class="rope"></div>
+            <div class="beam" aria-hidden="true"></div>
+            <div class="rope" aria-hidden="true"></div>
 
             <!-- Hangman body parts -->
-            <div class="head"></div>
-            <div class="body"></div>
-            <div class="left-arm"></div>
-            <div class="right-arm"></div>
-            <div class="left-leg"></div>
-            <div class="right-leg"></div>
+            <div class="head" aria-hidden="true"></div>
+            <div class="body" aria-hidden="true"></div>
+            <div class="left-arm" aria-hidden="true"></div>
+            <div class="right-arm" aria-hidden="true"></div>
+            <div class="left-leg" aria-hidden="true"></div>
+            <div class="right-leg" aria-hidden="true"></div>
           </div>
         </div>
 
-        <div class="word-section">
-          <div class="word-display" id="word-display"></div>
-          <div class="incorrect-letters" id="incorrect-letters"></div>
+        <div class="word-section" role="region" aria-label="Word to guess">
+          <div class="word-display" id="word-display" role="textbox" aria-label="Current word display" aria-live="polite" tabindex="0"></div>
+          <div class="incorrect-letters" id="incorrect-letters" role="region" aria-label="Incorrect guesses" aria-live="polite">
+            <span class="sr-only">Incorrect letters: </span>
+          </div>
         </div>
 
-        <div class="keyboard-section">
-          <div class="virtual-keyboard" id="keyboard"></div>
+        <div class="keyboard-section" role="region" aria-label="Virtual keyboard">
+          <div class="virtual-keyboard" id="keyboard" role="group" aria-label="Virtual keyboard for letter selection"></div>
         </div>
 
-        <div class="controls-section">
-          <button class="btn" id="new-game">New Game</button>
-          <button class="btn" id="pause-resume">Pause</button>
-          <button class="btn" id="hint">Hint</button>
-          <button class="btn" id="practice">Practice</button>
-          <button class="btn" id="multiplayer">Multiplayer</button>
-          <button class="btn" id="challenge">Challenge</button>
-          <button class="btn" id="help">Help</button>
-          <button class="btn" id="statistics">Statistics</button>
-          <button class="btn" id="achievements">Achievements</button>
-          <button class="btn" id="settings">Settings</button>
-          <button class="btn" id="quit">Quit</button>
+        <div class="controls-section" role="toolbar" aria-label="Game controls">
+          <button class="btn" id="new-game" aria-label="Start a new game">New Game</button>
+          <button class="btn" id="pause-resume" aria-label="Pause the game">Pause</button>
+          <button class="btn" id="hint" aria-label="Get a hint for the current word">Hint</button>
+          <button class="btn" id="practice" aria-label="Open practice mode settings">Practice</button>
+          <button class="btn" id="multiplayer" aria-label="Start local multiplayer game">Multiplayer</button>
+          <button class="btn" id="challenge" aria-label="View challenges and tournaments">Challenge</button>
+          <button class="btn" id="help" aria-label="Open help and tutorial">Help</button>
+          <button class="btn" id="statistics" aria-label="View game statistics">Statistics</button>
+          <button class="btn" id="achievements" aria-label="View achievements">Achievements</button>
+          <button class="btn" id="settings" aria-label="Open settings">Settings</button>
+          <button class="btn" id="quit" aria-label="Quit current game">Quit</button>
         </div>
       </main>
 
-      <div class="game-over-modal" id="game-over-modal">
+      <div class="game-over-modal" id="game-over-modal" role="dialog" aria-modal="true" aria-labelledby="game-result">
         <div class="modal-content">
-          <h2 id="game-result"></h2>
-          <p id="correct-word"></p>
-          <div class="modal-actions" style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-            <button class="btn" id="play-again">Play Again</button>
-            <button class="btn btn-share" id="share-result">📤 Share Result</button>
+          <h2 id="game-result" aria-live="assertive"></h2>
+          <p id="correct-word" aria-live="polite"></p>
+          <div class="modal-actions" role="group" aria-label="Game over actions" style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <button class="btn" id="play-again" aria-label="Start a new game">Play Again</button>
+            <button class="btn btn-share" id="share-result" aria-label="Share game result">📤 Share Result</button>
           </div>
         </div>
       </div>
 
-      <div class="pause-overlay" id="pause-overlay">
+      <div class="pause-overlay" id="pause-overlay" role="dialog" aria-modal="true" aria-labelledby="pause-title">
         <div class="pause-content">
-          <h2>Game Paused</h2>
+          <h2 id="pause-title">Game Paused</h2>
           <p>Press Space or click Resume to continue</p>
-          <button class="btn" id="resume-game">Resume</button>
+          <button class="btn" id="resume-game" aria-label="Resume the game">Resume</button>
         </div>
       </div>
 
-      <div class="statistics-modal" id="statistics-modal">
+      <div class="statistics-modal" id="statistics-modal" role="dialog" aria-modal="true" aria-labelledby="statistics-title">
         <div class="modal-content statistics-modal-content">
           <div class="modal-header">
-            <h2>📊 Statistics Dashboard</h2>
-            <button class="btn btn-close" id="close-statistics">✕</button>
+            <h2 id="statistics-title">📊 Statistics Dashboard</h2>
+            <button class="btn btn-close" id="close-statistics" aria-label="Close statistics modal">✕</button>
           </div>
-          <div class="statistics-content" id="statistics-content">
+          <div class="statistics-content" id="statistics-content" role="region" aria-label="Game statistics">
             <!-- Statistics will be populated here -->
           </div>
-          <div class="modal-actions">
-            <button class="btn btn-danger" id="reset-statistics">
+          <div class="modal-actions" role="group" aria-label="Statistics actions">
+            <button class="btn btn-danger" id="reset-statistics" aria-label="Reset all statistics">
               Reset Statistics
             </button>
-            <button class="btn" id="close-statistics-2">Close</button>
+            <button class="btn" id="close-statistics-2" aria-label="Close statistics modal">Close</button>
           </div>
         </div>
       </div>
 
-      <div class="achievements-modal" id="achievements-modal">
+      <div class="achievements-modal" id="achievements-modal" role="dialog" aria-modal="true" aria-labelledby="achievements-title">
         <div class="modal-content">
-          <h2>Achievements</h2>
-          <div class="achievements-content" id="achievements-content">
+          <h2 id="achievements-title">Achievements</h2>
+          <div class="achievements-content" id="achievements-content" role="region" aria-label="Achievements list">
             <!-- Achievements will be populated here -->
           </div>
-          <div class="modal-actions">
-            <button class="btn btn-share" id="share-achievements">📤 Share Achievements</button>
-            <button class="btn" id="close-achievements">Close</button>
+          <div class="modal-actions" role="group" aria-label="Achievements actions">
+            <button class="btn btn-share" id="share-achievements" aria-label="Share achievements">📤 Share Achievements</button>
+            <button class="btn" id="close-achievements" aria-label="Close achievements modal">Close</button>
           </div>
         </div>
       </div>
 
-      <div class="settings-modal" id="settings-modal">
+      <div class="settings-modal" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
         <div class="modal-content">
-          <h2>Settings</h2>
-          <div class="settings-content" id="settings-content">
+          <h2 id="settings-title">Settings</h2>
+          <div class="settings-content" id="settings-content" role="form" aria-label="Game settings">
             <!-- Settings will be populated here -->
           </div>
-          <div class="modal-actions">
-            <button class="btn" id="backup-data">💾 Backup Data</button>
-            <button class="btn" id="restore-data">📥 Restore Data</button>
-            <button class="btn" id="reset-settings">Reset to Default</button>
-            <button class="btn" id="close-settings">Close</button>
+          <div class="modal-actions" role="group" aria-label="Settings actions">
+            <button class="btn" id="backup-data" aria-label="Backup all game data">💾 Backup Data</button>
+            <button class="btn" id="restore-data" aria-label="Restore game data from backup">📥 Restore Data</button>
+            <button class="btn" id="reset-settings" aria-label="Reset settings to default values">Reset to Default</button>
+            <button class="btn" id="close-settings" aria-label="Close settings modal">Close</button>
           </div>
         </div>
       </div>
 
-      <div class="help-modal" id="help-modal">
+      <div class="help-modal" id="help-modal" role="dialog" aria-modal="true" aria-labelledby="help-title">
         <div class="modal-content help-modal-content">
           <div class="modal-header">
-            <h2>📚 Help & Tutorial</h2>
-            <button class="btn btn-close" id="close-help">✕</button>
+            <h2 id="help-title">📚 Help & Tutorial</h2>
+            <button class="btn btn-close" id="close-help" aria-label="Close help modal">✕</button>
           </div>
-          <div class="help-content" id="help-content">
+          <div class="help-content" id="help-content" role="region" aria-label="Help content">
             <!-- Help content will be populated here -->
           </div>
         </div>
       </div>
 
-      <div class="challenge-modal" id="challenge-modal">
+      <div class="challenge-modal" id="challenge-modal" role="dialog" aria-modal="true" aria-labelledby="challenge-title">
         <div class="modal-content challenge-modal-content">
           <div class="modal-header">
-            <h2>🏆 Challenges & Tournaments</h2>
-            <button class="btn btn-close" id="close-challenge">✕</button>
+            <h2 id="challenge-title">🏆 Challenges & Tournaments</h2>
+            <button class="btn btn-close" id="close-challenge" aria-label="Close challenges modal">✕</button>
           </div>
-          <div class="challenge-content" id="challenge-content">
+          <div class="challenge-content" id="challenge-content" role="region" aria-label="Challenges and tournaments">
             <!-- Challenge content will be populated here -->
           </div>
         </div>
       </div>
 
-      <div class="practice-modal" id="practice-modal">
+      <div class="practice-modal" id="practice-modal" role="dialog" aria-modal="true" aria-labelledby="practice-title">
         <div class="modal-content">
           <div class="modal-header">
-            <h2>🧪 Practice Mode</h2>
-            <button class="btn btn-close" id="close-practice">✕</button>
+            <h2 id="practice-title">🧪 Practice Mode</h2>
+            <button class="btn btn-close" id="close-practice" aria-label="Close practice mode modal">✕</button>
           </div>
-          <div class="practice-content" id="practice-content">
+          <div class="practice-content" id="practice-content" role="form" aria-label="Practice mode settings">
             <!-- Practice settings will be populated here -->
           </div>
-          <div class="modal-actions">
-            <button class="btn" id="start-practice">Start Practice</button>
+          <div class="modal-actions" role="group" aria-label="Practice mode actions">
+            <button class="btn" id="start-practice" aria-label="Start practice session">Start Practice</button>
           </div>
         </div>
       </div>
 
-      <div class="multiplayer-modal" id="multiplayer-modal">
+      <div class="multiplayer-modal" id="multiplayer-modal" role="dialog" aria-modal="true" aria-labelledby="multiplayer-title">
         <div class="modal-content">
           <div class="modal-header">
-            <h2>👥 Local Multiplayer</h2>
-            <button class="btn btn-close" id="close-multiplayer">✕</button>
+            <h2 id="multiplayer-title">👥 Local Multiplayer</h2>
+            <button class="btn btn-close" id="close-multiplayer" aria-label="Close multiplayer modal">✕</button>
           </div>
-          <div class="multiplayer-content" id="multiplayer-content">
+          <div class="multiplayer-content" id="multiplayer-content" role="form" aria-label="Multiplayer game setup">
             <!-- Multiplayer setup will be populated here -->
           </div>
         </div>
       </div>
 
-      <div class="multiplayer-winner-modal" id="multiplayer-winner-modal">
+      <div class="multiplayer-winner-modal" id="multiplayer-winner-modal" role="dialog" aria-modal="true" aria-labelledby="winner-title">
         <div class="modal-content">
           <div class="modal-header">
-            <h2 id="winner-title">🏆 Winner!</h2>
+            <h2 id="winner-title" aria-live="assertive">🏆 Winner!</h2>
           </div>
-          <div class="winner-content" id="winner-content">
+          <div class="winner-content" id="winner-content" role="region" aria-label="Winner information">
             <!-- Winner comparison will be populated here -->
           </div>
-          <div class="modal-actions">
-            <button class="btn btn-share" id="share-multiplayer-result">📤 Share Result</button>
-            <button class="btn" id="multiplayer-play-again">Play Again</button>
-            <button class="btn" id="multiplayer-end-game">End Game</button>
+          <div class="modal-actions" role="group" aria-label="Multiplayer winner actions">
+            <button class="btn btn-share" id="share-multiplayer-result" aria-label="Share multiplayer result">📤 Share Result</button>
+            <button class="btn" id="multiplayer-play-again" aria-label="Play another multiplayer game">Play Again</button>
+            <button class="btn" id="multiplayer-end-game" aria-label="End multiplayer game">End Game</button>
           </div>
         </div>
       </div>
 
-      <div class="share-modal" id="share-modal">
+      <div class="share-modal" id="share-modal" role="dialog" aria-modal="true" aria-labelledby="share-title">
         <div class="modal-content">
           <div class="modal-header">
-            <h2>📤 Share</h2>
-            <button class="btn btn-close" id="close-share">✕</button>
+            <h2 id="share-title">📤 Share</h2>
+            <button class="btn btn-close" id="close-share" aria-label="Close share modal">✕</button>
           </div>
-          <div class="share-content" id="share-content">
+          <div class="share-content" id="share-content" role="region" aria-label="Share options">
             <!-- Share options will be populated here -->
           </div>
         </div>
@@ -297,6 +307,7 @@
     <script src="scripts/progress-manager.js"></script>
     <script src="scripts/preferences-manager.js"></script>
     <script src="scripts/data-validator.js"></script>
+    <script src="scripts/accessibility-manager.js"></script>
     <script src="scripts/error-middleware.js"></script>
     <script src="scripts/utils.js"></script>
     <script src="scripts/theme-manager.js"></script>

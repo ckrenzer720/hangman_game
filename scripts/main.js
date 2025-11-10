@@ -8,6 +8,7 @@ let lazyLoader;
 let memoryOptimizer;
 let cacheManager;
 let offlineManager;
+let accessibilityManager;
 
 // Initialize performance tools immediately (before DOM ready)
 if (typeof PerformanceMonitor !== 'undefined') {
@@ -67,6 +68,14 @@ if (typeof DataValidator !== 'undefined') {
   dataValidator = new DataValidator({
     strictMode: false,
     autoRecover: true
+  });
+}
+
+// Initialize accessibility manager
+if (typeof AccessibilityManager !== 'undefined') {
+  accessibilityManager = new AccessibilityManager({
+    enabled: true,
+    announceDelay: 100
   });
 }
 
@@ -134,6 +143,10 @@ document.addEventListener("DOMContentLoaded", async function () {
         if (cacheManager && dataValidator) {
           cacheManager.setDataValidator(dataValidator);
         }
+        // Inject accessibility manager if available
+        if (accessibilityManager) {
+          gameInstance.accessibilityManager = accessibilityManager;
+        }
         return gameInstance;
       },
       "game_initialization",
@@ -166,6 +179,10 @@ document.addEventListener("DOMContentLoaded", async function () {
         if (memoryOptimizer) {
           uiInstance.memoryOptimizer = memoryOptimizer;
         }
+        // Inject accessibility manager if available
+        if (accessibilityManager) {
+          uiInstance.accessibilityManager = accessibilityManager;
+        }
         return uiInstance;
       },
       "ui_initialization",
@@ -187,6 +204,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     window.progressManager = progressManager;
     window.preferencesManager = preferencesManager;
     window.dataValidator = dataValidator;
+    window.accessibilityManager = accessibilityManager;
 
     // Capture final initialization metrics
     performanceMonitor?.mark('app-ready');

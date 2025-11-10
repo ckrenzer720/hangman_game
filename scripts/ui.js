@@ -24,20 +24,30 @@ class GameUI {
 
     keyboard.innerHTML = "";
 
-    keyboardLayout.forEach((row) => {
+    keyboardLayout.forEach((row, rowIndex) => {
       const rowElement = document.createElement("div");
       rowElement.className = "keyboard-row";
+      rowElement.setAttribute("role", "group");
+      rowElement.setAttribute("aria-label", `Keyboard row ${rowIndex + 1}`);
 
       row.split("").forEach((letter) => {
         const key = document.createElement("button");
         key.className = "keyboard-key";
         key.textContent = letter;
         key.setAttribute("data-letter", letter.toLowerCase());
+        key.setAttribute("role", "button");
+        key.setAttribute("aria-label", `Guess letter ${letter}`);
+        key.setAttribute("tabindex", "0");
         rowElement.appendChild(key);
       });
 
       keyboard.appendChild(rowElement);
     });
+
+    // Setup ARIA for keyboard if accessibility manager available
+    if (this.accessibilityManager) {
+      this.accessibilityManager.setupKeyboardARIA(keyboard);
+    }
   }
 
   bindEvents() {
@@ -927,12 +937,36 @@ class GameUI {
       if (success) {
         keyElement.classList.add("correct");
         this.addPulseAnimation(keyElement);
+        // Update ARIA state for accessibility
+        if (this.accessibilityManager) {
+          this.accessibilityManager.updateKeyState(keyElement, 'correct');
+        }
       } else if (this.game.gameState.guessedLetters.includes(letter)) {
         // Already guessed - no visual change needed
+        if (this.accessibilityManager) {
+          this.accessibilityManager.updateKeyState(keyElement, 'guessed');
+        }
       } else {
         keyElement.classList.add("incorrect");
         this.addShakeAnimation(keyElement);
+        // Update ARIA state for accessibility
+        if (this.accessibilityManager) {
+          this.accessibilityManager.updateKeyState(keyElement, 'incorrect');
+        }
       }
+    }
+
+    // Announce guess result to screen readers
+    if (this.accessibilityManager) {
+      const remaining = this.game.gameState.maxGuesses - this.game.gameState.incorrectGuesses;
+      this.accessibilityManager.announceGuess(
+        letter.toUpperCase(),
+        success,
+        {
+          remainingGuesses: remaining,
+          revealed: success ? `Word progress: ${this.game.gameState.hiddenWord}` : ''
+        }
+      );
     }
 
     if (success) {
@@ -970,11 +1004,20 @@ class GameUI {
     const pauseResumeBtn = document.getElementById("pause-resume");
     if (pauseResumeBtn) {
       pauseResumeBtn.textContent = "Pause";
+      if (this.accessibilityManager) {
+        this.accessibilityManager.updateButtonLabel(pauseResumeBtn, 'pause');
+      }
     }
 
     this.game.resetGame();
     this.updateGameStatus();
     this.updateAllProgressIndicators();
+    
+    // Announce new game to screen readers
+    if (this.accessibilityManager) {
+      this.accessibilityManager.announceGameState('playing');
+    }
+    
     this.showFeedback("success", "New game started! Good luck!");
   }
 
@@ -1004,10 +1047,23 @@ class GameUI {
 
     if (pauseOverlay) {
       pauseOverlay.classList.add("show");
+      // Setup modal ARIA and focus trap
+      if (this.accessibilityManager) {
+        this.accessibilityManager.saveFocus();
+        this.accessibilityManager.setupModalARIA(pauseOverlay, "Game Paused");
+        const resumeBtn = pauseOverlay.querySelector("#resume-game");
+        if (resumeBtn) {
+          this.focusTrapCleanup = this.accessibilityManager.trapFocus(pauseOverlay, resumeBtn);
+        }
+        this.accessibilityManager.announceGameState('paused');
+      }
     }
 
     if (pauseResumeBtn) {
       pauseResumeBtn.textContent = "Resume";
+      if (this.accessibilityManager) {
+        this.accessibilityManager.updateButtonLabel(pauseResumeBtn, 'resume');
+      }
     }
 
     // Disable keyboard input
@@ -1025,10 +1081,23 @@ class GameUI {
 
     if (pauseOverlay) {
       pauseOverlay.classList.remove("show");
+      // Cleanup focus trap
+      if (this.focusTrapCleanup) {
+        this.focusTrapCleanup();
+        this.focusTrapCleanup = null;
+      }
+      // Restore focus
+      if (this.accessibilityManager) {
+        this.accessibilityManager.restoreFocus();
+        this.accessibilityManager.announceGameState('resumed');
+      }
     }
 
     if (pauseResumeBtn) {
       pauseResumeBtn.textContent = "Pause";
+      if (this.accessibilityManager) {
+        this.accessibilityManager.updateButtonLabel(pauseResumeBtn, 'pause');
+      }
     }
 
     // Re-enable keyboard input
@@ -1275,6 +1344,7 @@ class GameUI {
   updateGameProgress() {
     const progressFill = document.getElementById("game-progress-fill");
     const progressText = document.getElementById("game-progress-text");
+    const progressBar = document.getElementById("game-progress-bar");
 
     if (!progressFill || !progressText) return;
 
@@ -1284,6 +1354,10 @@ class GameUI {
     if (!currentWord) {
       progressFill.style.width = "0%";
       progressText.textContent = "0%";
+      // Update ARIA attributes
+      if (progressBar && this.accessibilityManager) {
+        this.accessibilityManager.updateProgressBar(progressBar, 0, "Game progress");
+      }
       return;
     }
 
@@ -1303,6 +1377,15 @@ class GameUI {
     );
     progressFill.classList.add("animate");
     progressText.textContent = progressPercentage + "%";
+
+    // Update ARIA attributes for accessibility
+    if (progressBar && this.accessibilityManager) {
+      this.accessibilityManager.updateProgressBar(
+        progressBar,
+        progressPercentage,
+        `Game progress: ${progressPercentage}% complete`
+      );
+    }
 
     // Remove animation class after animation completes
     setTimeout(() => {

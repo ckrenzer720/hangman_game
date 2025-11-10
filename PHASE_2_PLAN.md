@@ -180,7 +180,7 @@ Phase 2 focuses on enhancing the core hangman game with advanced features, impro
 
 ### 5.1 Screen Reader Support
 
-- [ ] **ARIA Labels**
+- [x] **ARIA Labels**
 
   - Proper labeling for all elements
   - Live regions for updates

@@ -645,6 +645,11 @@ class HangmanGame {
 
       this.updateStatistics("won");
 
+      // Announce win to screen readers
+      if (this.accessibilityManager) {
+        this.accessibilityManager.announceGameState('won', { word: this.gameState.currentWord });
+      }
+
       // Handle multiplayer scoring
       if (this.gameState.multiplayer.enabled) {
         const currentPlayer = this.gameState.multiplayer.players[this.gameState.multiplayer.currentPlayerIndex];
@@ -746,6 +751,11 @@ class HangmanGame {
       this.triggerFailureEffect();
 
       this.updateStatistics("lost");
+
+      // Announce loss to screen readers
+      if (this.accessibilityManager) {
+        this.accessibilityManager.announceGameState('lost', { word: this.gameState.currentWord });
+      }
 
       // Handle multiplayer - player lost this round
       if (this.gameState.multiplayer.enabled) {
