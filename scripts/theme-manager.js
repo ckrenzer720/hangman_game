@@ -529,6 +529,27 @@ class ThemeManager {
             <span>Enable Sound</span>
           </div>
         </div>
+        
+        <div class="setting-group" id="volume-control-group" style="${
+          this.settings.sound ? "" : "display: none;"
+        }">
+          <label class="setting-label">Volume</label>
+          <div class="setting-description">Adjust sound effects volume</div>
+          <div class="setting-controls">
+            <input 
+              type="range" 
+              id="volume-slider" 
+              min="0" 
+              max="100" 
+              value="${Math.round((this.settings.soundVolume || 0.5) * 100)}"
+              aria-label="Sound volume"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow="${Math.round((this.settings.soundVolume || 0.5) * 100)}"
+            >
+            <span id="volume-value" aria-live="polite">${Math.round((this.settings.soundVolume || 0.5) * 100)}%</span>
+          </div>
+        </div>
       </div>
       
       <div class="settings-section">
