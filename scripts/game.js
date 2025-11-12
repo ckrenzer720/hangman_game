@@ -571,11 +571,21 @@ class HangmanGame {
     // Check if letter is in the word
     if (this.gameState.currentWord.includes(letter)) {
       this.revealLetter(letter);
+      // Play audio feedback for correct guess
+      if (this.audioManager) {
+        const remaining = this.gameState.maxIncorrectGuesses - this.gameState.incorrectGuesses.length;
+        this.audioManager.playCorrectGuess(letter, { remainingGuesses: remaining });
+      }
       this.checkWinCondition();
       return true;
     } else {
       this.gameState.incorrectGuesses.push(letter);
       this.drawHangmanPart();
+      // Play audio feedback for incorrect guess
+      if (this.audioManager) {
+        const remaining = this.gameState.maxIncorrectGuesses - this.gameState.incorrectGuesses.length;
+        this.audioManager.playIncorrectGuess(letter, { remainingGuesses: remaining });
+      }
       this.checkLoseCondition();
       return false;
     }
@@ -645,9 +655,12 @@ class HangmanGame {
 
       this.updateStatistics("won");
 
-      // Announce win to screen readers
+      // Announce win to screen readers and play audio
       if (this.accessibilityManager) {
         this.accessibilityManager.announceGameState('won', { word: this.gameState.currentWord });
+      }
+      if (this.audioManager) {
+        this.audioManager.playWin({ word: this.gameState.currentWord });
       }
 
       // Handle multiplayer scoring
@@ -752,9 +765,12 @@ class HangmanGame {
 
       this.updateStatistics("lost");
 
-      // Announce loss to screen readers
+      // Announce loss to screen readers and play audio
       if (this.accessibilityManager) {
         this.accessibilityManager.announceGameState('lost', { word: this.gameState.currentWord });
+      }
+      if (this.audioManager) {
+        this.audioManager.playLose({ word: this.gameState.currentWord });
       }
 
       // Handle multiplayer - player lost this round
@@ -964,6 +980,11 @@ class HangmanGame {
         unrevealedLetters[Math.floor(Math.random() * unrevealedLetters.length)];
       this.makeGuess(randomLetter);
 
+      // Play audio feedback for hint
+      if (this.audioManager) {
+        this.audioManager.playHint();
+      }
+
       // Practice mode: apply hint penalty
       if (this.gameState.practiceMode.enabled) {
         this.gameState.practiceMode.hintsUsed += 1;
@@ -983,6 +1004,11 @@ class HangmanGame {
         this.progressManager.saveProgress(this.gameState, this);
       }
       
+      // Announce pause
+      if (this.audioManager) {
+        this.audioManager.announceGameState('paused');
+      }
+      
       return true;
     }
     return false;
@@ -992,6 +1018,12 @@ class HangmanGame {
     if (this.gameState.gameStatus === "paused" && this.gameState.isPaused) {
       this.gameState.isPaused = false;
       this.gameState.gameStatus = "playing";
+      
+      // Announce resume
+      if (this.audioManager) {
+        this.audioManager.announceGameState('resumed');
+      }
+      
       return true;
     }
     return false;

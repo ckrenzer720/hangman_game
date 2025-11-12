@@ -187,7 +187,7 @@ Phase 2 focuses on enhancing the core hangman game with advanced features, impro
   - Focus management
   - Keyboard navigation
 
-- [ ] **Audio Feedback**
+- [x] **Audio Feedback**
   - Screen reader announcements
   - Audio cues for actions
   - Sound effects toggle

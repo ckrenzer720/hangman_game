@@ -54,55 +54,82 @@ class GameUI {
     // New Game Button
     const newGameBtn = document.getElementById("new-game");
     if (newGameBtn) {
-      newGameBtn.addEventListener("click", () => this.startNewGame());
+      newGameBtn.addEventListener("click", () => {
+        this.playButtonSound();
+        this.startNewGame();
+      });
     }
 
     // Hint Button
     const hintBtn = document.getElementById("hint");
     if (hintBtn) {
-      hintBtn.addEventListener("click", () => this.game.getHint());
+      hintBtn.addEventListener("click", () => {
+        this.playButtonSound();
+        this.game.getHint();
+      });
     }
 
     // Help Button
     const helpBtn = document.getElementById("help");
     if (helpBtn) {
-      helpBtn.addEventListener("click", () => this.showHelp());
+      helpBtn.addEventListener("click", () => {
+        this.playButtonSound();
+        this.showHelp();
+      });
     }
 
     // Challenge Button
     const challengeBtn = document.getElementById("challenge");
     if (challengeBtn) {
-      challengeBtn.addEventListener("click", () => this.showChallenge());
+      challengeBtn.addEventListener("click", () => {
+        this.playButtonSound();
+        this.showChallenge();
+      });
     }
 
     // Pause/Resume Button
     const pauseResumeBtn = document.getElementById("pause-resume");
     if (pauseResumeBtn) {
-      pauseResumeBtn.addEventListener("click", () => this.togglePause());
+      pauseResumeBtn.addEventListener("click", () => {
+        this.playButtonSound();
+        this.togglePause();
+      });
     }
 
     // Practice Button
     const practiceBtn = document.getElementById("practice");
     if (practiceBtn) {
-      practiceBtn.addEventListener("click", () => this.showPractice());
+      practiceBtn.addEventListener("click", () => {
+        this.playButtonSound();
+        this.showPractice();
+      });
     }
 
     // Multiplayer Button
     const multiplayerBtn = document.getElementById("multiplayer");
     if (multiplayerBtn) {
-      multiplayerBtn.addEventListener("click", () => this.showMultiplayer());
+      multiplayerBtn.addEventListener("click", () => {
+        this.playButtonSound();
+        this.showMultiplayer();
+      });
     }
 
     // Quit Button
     const quitBtn = document.getElementById("quit");
     if (quitBtn) {
-      quitBtn.addEventListener("click", () => this.quitGame());
+      quitBtn.addEventListener("click", () => {
+        this.playButtonSound();
+        this.quitGame();
+      });
     }
 
     // Play Again Button (in modal)
     const playAgainBtn = document.getElementById("play-again");
     if (playAgainBtn) {
-      playAgainBtn.addEventListener("click", () => this.startNewGame());
+      playAgainBtn.addEventListener("click", () => {
+        this.playButtonSound();
+        this.startNewGame();
+      });
     }
 
     // Share Result Button
@@ -261,6 +288,8 @@ class GameUI {
     if (keyboard) {
       keyboard.addEventListener("click", (e) => {
         if (e.target.classList.contains("keyboard-key")) {
+          // Play button sound for keyboard clicks
+          this.playButtonSound();
           this.handleLetterClick(e.target);
         }
       });
@@ -1166,6 +1195,12 @@ class GameUI {
 
   showFeedback(type, message) {
     try {
+      // Play notification sound if audio manager is available
+      if (this.audioManager && type !== 'error') {
+        // Only play notification sound for non-error feedback
+        this.audioManager.playNotification(message);
+      }
+      
       // Create or update feedback element
       let feedbackElement = document.getElementById("game-feedback");
       if (!feedbackElement) {
@@ -1191,6 +1226,15 @@ class GameUI {
     } catch (error) {
       // Fallback to console if DOM manipulation fails
       console.log(`${type.toUpperCase()}: ${message}`);
+    }
+  }
+  
+  /**
+   * Play button click sound if audio manager is available
+   */
+  playButtonSound() {
+    if (this.audioManager) {
+      this.audioManager.playButtonClick();
     }
   }
 

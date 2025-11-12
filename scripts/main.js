@@ -79,6 +79,16 @@ if (typeof AccessibilityManager !== 'undefined') {
   });
 }
 
+// Initialize audio manager
+let audioManager;
+if (typeof AudioManager !== 'undefined') {
+  audioManager = new AudioManager({
+    enabled: true,
+    accessibilityManager: accessibilityManager,
+    preferencesManager: preferencesManager
+  });
+}
+
 // Wait for DOM to be fully loaded
 document.addEventListener("DOMContentLoaded", async function () {
   performanceMonitor?.mark('dom-ready');
@@ -147,6 +157,10 @@ document.addEventListener("DOMContentLoaded", async function () {
         if (accessibilityManager) {
           gameInstance.accessibilityManager = accessibilityManager;
         }
+        // Inject audio manager if available
+        if (audioManager) {
+          gameInstance.audioManager = audioManager;
+        }
         return gameInstance;
       },
       "game_initialization",
@@ -183,6 +197,10 @@ document.addEventListener("DOMContentLoaded", async function () {
         if (accessibilityManager) {
           uiInstance.accessibilityManager = accessibilityManager;
         }
+        // Inject audio manager if available
+        if (audioManager) {
+          uiInstance.audioManager = audioManager;
+        }
         return uiInstance;
       },
       "ui_initialization",
@@ -205,6 +223,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     window.preferencesManager = preferencesManager;
     window.dataValidator = dataValidator;
     window.accessibilityManager = accessibilityManager;
+    window.audioManager = audioManager;
 
     // Capture final initialization metrics
     performanceMonitor?.mark('app-ready');

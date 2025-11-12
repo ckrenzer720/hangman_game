@@ -221,6 +221,46 @@ class ThemeManager {
   setSound(enabled) {
     this.settings.sound = enabled;
     this.saveSettings();
+    
+    // Update AudioManager if available
+    if (window.audioManager) {
+      window.audioManager.setSoundEffectsEnabled(enabled);
+    }
+    
+    // Update preferences manager if available
+    if (window.preferencesManager) {
+      window.preferencesManager.set('sound', enabled);
+    }
+    
+    // Show/hide volume control
+    const volumeControlGroup = document.getElementById('volume-control-group');
+    if (volumeControlGroup) {
+      volumeControlGroup.style.display = enabled ? '' : 'none';
+    }
+  }
+  
+  setSoundVolume(volume) {
+    // Volume is 0-100 in UI, convert to 0-1 for AudioManager
+    const normalizedVolume = volume / 100;
+    this.settings.soundVolume = normalizedVolume;
+    this.saveSettings();
+    
+    // Update AudioManager if available
+    if (window.audioManager) {
+      window.audioManager.setVolume(normalizedVolume);
+    }
+    
+    // Update preferences manager if available
+    if (window.preferencesManager) {
+      window.preferencesManager.set('soundVolume', normalizedVolume);
+    }
+    
+    // Update volume display
+    const volumeValue = document.getElementById('volume-value');
+    if (volumeValue) {
+      volumeValue.textContent = `${volume}%`;
+      volumeValue.setAttribute('aria-valuenow', volume);
+    }
   }
 
   setDifficulty(difficulty) {
@@ -309,6 +349,14 @@ class ThemeManager {
     document.addEventListener("change", (e) => {
       if (e.target.id === "sound-toggle") {
         this.setSound(e.target.checked);
+      }
+    });
+    
+    // Volume slider
+    document.addEventListener("input", (e) => {
+      if (e.target.id === "volume-slider") {
+        const volume = parseInt(e.target.value, 10);
+        this.setSoundVolume(volume);
       }
     });
 
