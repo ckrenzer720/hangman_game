@@ -601,10 +601,50 @@ body {
    FOCUS STYLES (Accessibility)
    ======================================== */
 
-.btn:focus,
-.keyboard-key:focus {
+/* Enhanced focus indicators for better visibility */
+.btn:focus-visible,
+.keyboard-key:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--accent-color);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(107, 114, 128, 0.2);
+}
+
+/* Fallback for browsers that don't support :focus-visible */
+.btn:focus:not(:focus-visible),
+.keyboard-key:focus:not(:focus-visible) {
   outline: 2px solid var(--dark-gray);
   outline-offset: 1px;
+}
+
+/* Focus styles for keyboard keys */
+.keyboard-key:focus-visible {
+  transform: scale(1.05);
+  z-index: 10;
+  position: relative;
+}
+
+/* Focus styles for buttons */
+.btn:focus-visible {
+  background-color: var(--secondary-hover);
+  color: var(--white);
+}
+
+/* Disabled elements should not be focusable */
+.btn:disabled:focus,
+.keyboard-key:disabled:focus,
+.btn[aria-disabled="true"]:focus,
+.keyboard-key[aria-disabled="true"]:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Focus trap indicator for modals */
+.modal-content:focus-within {
+  outline: 2px dashed var(--accent-color);
+  outline-offset: 4px;
 }
 
 /* ========================================

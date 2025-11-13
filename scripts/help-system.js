@@ -177,7 +177,7 @@ class HelpSystem {
                   <kbd>Enter</kbd>
                 </div>
                 <div class="shortcut-description">
-                  Start a new game
+                  Activate focused keyboard key or start new game
                 </div>
               </div>
               <div class="shortcut-item">
@@ -212,18 +212,42 @@ class HelpSystem {
               </div>
               <div class="shortcut-item">
                 <div class="shortcut-keys">
-                  <kbd>Click</kbd>
+                  <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd>
                 </div>
                 <div class="shortcut-description">
-                  Click on virtual keyboard keys
+                  Navigate virtual keyboard keys
                 </div>
               </div>
               <div class="shortcut-item">
                 <div class="shortcut-keys">
-                  <kbd>Mouse Wheel</kbd>
+                  <kbd>Tab</kbd>
                 </div>
                 <div class="shortcut-description">
-                  Scroll through statistics and achievements
+                  Navigate between interactive elements
+                </div>
+              </div>
+              <div class="shortcut-item">
+                <div class="shortcut-keys">
+                  <kbd>N</kbd>
+                </div>
+                <div class="shortcut-description">
+                  Start a new game
+                </div>
+              </div>
+              <div class="shortcut-item">
+                <div class="shortcut-keys">
+                  <kbd>S</kbd>
+                </div>
+                <div class="shortcut-description">
+                  Open statistics
+                </div>
+              </div>
+              <div class="shortcut-item">
+                <div class="shortcut-keys">
+                  <kbd>?</kbd> or <kbd>F1</kbd>
+                </div>
+                <div class="shortcut-description">
+                  Open help
                 </div>
               </div>
             </div>

@@ -948,12 +948,22 @@ class HangmanGame {
     const keyboardKeys = document.querySelectorAll(".keyboard-key");
     keyboardKeys.forEach((key) => {
       const letter = key.textContent.toLowerCase();
-      key.disabled = this.gameState.guessedLetters.includes(letter);
+      const isGuessed = this.gameState.guessedLetters.includes(letter);
+      key.disabled = isGuessed;
+
+      // Optimize tab order: remove disabled keys from tab sequence
+      if (isGuessed) {
+        key.setAttribute("tabindex", "-1");
+        key.setAttribute("aria-disabled", "true");
+      } else {
+        key.setAttribute("tabindex", "0");
+        key.setAttribute("aria-disabled", "false");
+      }
 
       // Remove previous state classes
       key.classList.remove("correct", "incorrect");
 
-      if (this.gameState.guessedLetters.includes(letter)) {
+      if (isGuessed) {
         if (this.gameState.currentWord.includes(letter)) {
           key.classList.add("correct");
         } else {

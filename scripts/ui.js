@@ -909,10 +909,18 @@ class GameUI {
 
   handleKeyPress(event) {
     const key = event.key;
+    const isModifierPressed = event.ctrlKey || event.metaKey || event.altKey || event.shiftKey;
+
+    // Handle Escape key - close modals
+    if (key === "Escape") {
+      this.handleEscapeKey();
+      return;
+    }
 
     // Handle pause/resume with space key (works in any game state except won/lost)
     if (
       key === " " &&
+      !isModifierPressed &&
       this.game.gameState.gameStatus !== "won" &&
       this.game.gameState.gameStatus !== "lost"
     ) {
@@ -921,15 +929,29 @@ class GameUI {
       return;
     }
 
+    // Handle arrow keys for virtual keyboard navigation
+    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(key)) {
+      if (this.handleArrowKeyNavigation(event, key)) {
+        return;
+      }
+    }
+
     // Only handle other keys if game is playing and not paused
     if (
       this.game.gameState.gameStatus !== "playing" ||
       this.game.gameState.isPaused
-    )
+    ) {
+      // Allow some shortcuts even when paused
+      if (key === "Enter" && this.game.gameState.isPaused) {
+        event.preventDefault();
+        this.resumeGame();
+        return;
+      }
       return;
+    }
 
     // Use enhanced input validation for letter keys
-    if (key.length === 1) {
+    if (key.length === 1 && !isModifierPressed) {
       const validation = GameUtils.validateHangmanInput(key);
 
       if (validation.isValid) {
@@ -943,15 +965,151 @@ class GameUI {
     }
 
     // Handle special keys
-    if (key === "Enter") {
+    if (key === "Enter" && !isModifierPressed) {
+      event.preventDefault();
+      // If a keyboard key is focused, activate it
+      const focusedKey = document.activeElement;
+      if (focusedKey && focusedKey.classList.contains("keyboard-key") && !focusedKey.disabled) {
+        this.handleLetterClick(focusedKey);
+      } else {
+        this.startNewGame();
+      }
+    }
+
+    if (key.toLowerCase() === "h" && !isModifierPressed) {
+      event.preventDefault();
+      this.game.getHint();
+    }
+
+    // Keyboard shortcuts
+    if (key.toLowerCase() === "n" && !isModifierPressed) {
       event.preventDefault();
       this.startNewGame();
     }
 
-    if (key.toLowerCase() === "h") {
+    if (key.toLowerCase() === "s" && !isModifierPressed) {
       event.preventDefault();
-      this.game.getHint();
+      if (document.getElementById("statistics")) {
+        this.showStatistics();
+      }
     }
+
+    if (key.toLowerCase() === "?" || (key === "F1" && !isModifierPressed)) {
+      event.preventDefault();
+      if (document.getElementById("help")) {
+        this.showHelp();
+      }
+    }
+  }
+
+  /**
+   * Handle Escape key - close modals
+   */
+  handleEscapeKey() {
+    // Close any open modals
+    const modals = [
+      { id: "game-over-modal", hideFn: () => this.game.hideGameOverModal() },
+      { id: "statistics-modal", hideFn: () => this.hideStatistics() },
+      { id: "achievements-modal", hideFn: () => this.hideAchievements() },
+      { id: "settings-modal", hideFn: () => this.hideSettings() },
+      { id: "help-modal", hideFn: () => this.hideHelp() },
+      { id: "challenge-modal", hideFn: () => this.hideChallenge() },
+      { id: "practice-modal", hideFn: () => this.hidePractice() },
+      { id: "multiplayer-modal", hideFn: () => this.hideMultiplayer() },
+      { id: "share-modal", hideFn: () => this.hideShareModal() },
+      { id: "pause-overlay", hideFn: () => this.resumeGame() }
+    ];
+
+    for (const modal of modals) {
+      const element = document.getElementById(modal.id);
+      if (element && element.classList.contains("show")) {
+        modal.hideFn();
+        return;
+      }
+    }
+  }
+
+  /**
+   * Handle arrow key navigation for virtual keyboard
+   * @param {KeyboardEvent} event - Keyboard event
+   * @param {string} key - Arrow key pressed
+   * @returns {boolean} True if navigation was handled
+   */
+  handleArrowKeyNavigation(event, key) {
+    const keyboard = document.getElementById("keyboard");
+    if (!keyboard) return false;
+
+    const keys = Array.from(keyboard.querySelectorAll(".keyboard-key:not([disabled])"));
+    if (keys.length === 0) return false;
+
+    const currentFocus = document.activeElement;
+    const currentIndex = keys.indexOf(currentFocus);
+
+    // If no key is focused, focus the first key
+    if (currentIndex === -1) {
+      event.preventDefault();
+      keys[0].focus();
+      return true;
+    }
+
+    event.preventDefault();
+
+    // Get keyboard layout
+    const keyboardLayout = ["ABCDE", "FGHIJ", "KLMNO", "PQRST", "UVWXY", "Z"];
+    const rows = keyboardLayout.length;
+    const cols = keyboardLayout[0].length; // Maximum columns
+
+    // Calculate current position
+    let currentRow = -1;
+    let currentCol = -1;
+    let letterIndex = 0;
+
+    for (let row = 0; row < keyboardLayout.length; row++) {
+      const rowLetters = keyboardLayout[row];
+      for (let col = 0; col < rowLetters.length; col++) {
+        if (letterIndex === currentIndex) {
+          currentRow = row;
+          currentCol = col;
+          break;
+        }
+        letterIndex++;
+      }
+      if (currentRow !== -1) break;
+    }
+
+    // Calculate new position based on arrow key
+    let newRow = currentRow;
+    let newCol = currentCol;
+
+    switch (key) {
+      case "ArrowUp":
+        newRow = Math.max(0, currentRow - 1);
+        break;
+      case "ArrowDown":
+        newRow = Math.min(rows - 1, currentRow + 1);
+        break;
+      case "ArrowLeft":
+        newCol = Math.max(0, currentCol - 1);
+        break;
+      case "ArrowRight":
+        newCol = Math.min(keyboardLayout[newRow].length - 1, currentCol + 1);
+        break;
+    }
+
+    // Calculate new index
+    let newIndex = 0;
+    for (let row = 0; row < newRow; row++) {
+      newIndex += keyboardLayout[row].length;
+    }
+    newIndex += newCol;
+
+    // Ensure new index is valid
+    if (newIndex >= 0 && newIndex < keys.length) {
+      keys[newIndex].focus();
+      return true;
+    }
+
+    return false;
   }
 
   makeGuess(letter) {
