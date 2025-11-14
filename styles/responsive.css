@@ -127,7 +127,8 @@
   .keyboard-key {
     padding: var(--spacing-sm);
     font-size: 1rem;
-    min-height: 40px;
+    min-height: 44px; /* Minimum touch target size (Apple) */
+    min-width: 44px;
   }
 
   .controls-section {
@@ -142,6 +143,7 @@
     width: 100%;
     padding: var(--spacing-md);
     font-size: 1rem;
+    min-height: 44px; /* Minimum touch target size */
   }
 
   .modal-content {
@@ -252,7 +254,12 @@
   }
 
   .keyboard-key {
-    min-height: 45px;
+    min-height: 48px; /* Android minimum touch target */
+    min-width: 48px;
+  }
+  
+  .btn {
+    min-height: 48px; /* Android minimum touch target */
   }
 
   .controls-section {

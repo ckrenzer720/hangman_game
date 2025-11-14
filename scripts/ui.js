@@ -69,6 +69,29 @@ class GameUI {
       });
     }
 
+    // Voice Input Button
+    const voiceInputBtn = document.getElementById("voice-input");
+    if (voiceInputBtn) {
+      // Show button only if voice input is available
+      if (this.touchAccessibilityManager && this.touchAccessibilityManager.recognition) {
+        voiceInputBtn.style.display = "";
+        voiceInputBtn.addEventListener("click", () => {
+          this.playButtonSound();
+          if (this.touchAccessibilityManager) {
+            this.touchAccessibilityManager.toggleVoiceInput();
+            // Update button text
+            if (this.touchAccessibilityManager.isListening) {
+              voiceInputBtn.textContent = "🎤 Stop";
+              voiceInputBtn.setAttribute("aria-label", "Stop voice input");
+            } else {
+              voiceInputBtn.textContent = "🎤 Voice";
+              voiceInputBtn.setAttribute("aria-label", "Voice input - say a letter to guess");
+            }
+          }
+        });
+      }
+    }
+
     // Help Button
     const helpBtn = document.getElementById("help");
     if (helpBtn) {
