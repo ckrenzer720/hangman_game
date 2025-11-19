@@ -227,7 +227,7 @@ Phase 2 focuses on enhancing the core hangman game with advanced features, impro
 
 ### 6.2 User Experience Testing
 
-- [ ] **Usability Testing**
+- [x] **Usability Testing**
 
   - User flow analysis
   - Interface testing
