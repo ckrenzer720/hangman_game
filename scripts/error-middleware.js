@@ -115,6 +115,21 @@ class ErrorMiddleware {
    * @returns {Object} - Recovery result
    */
   handleError(error, context = "unknown", options = {}) {
+    // Auto-report critical errors to feedback manager
+    if (window.feedbackManager && options.severity !== 'low') {
+      try {
+        const errorDescription = error.message || 'An error occurred';
+        const errorStack = error.stack || '';
+        window.feedbackManager.reportBug(
+          errorDescription,
+          `Context: ${context}\n\nStack trace:\n${errorStack}`,
+          error,
+          { autoReported: true, ...options }
+        );
+      } catch (reportError) {
+        console.warn('Failed to auto-report error:', reportError);
+      }
+    }
     const errorInfo = this.createErrorInfo(error, context, options);
 
     if (this.config.enableLogging) {

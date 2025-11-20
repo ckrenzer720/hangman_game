@@ -17,6 +17,7 @@
       <link rel="stylesheet" href="styles/dashboard.css" />
       <link rel="stylesheet" href="styles/help.css" />
       <link rel="stylesheet" href="styles/challenge.css" />
+      <link rel="stylesheet" href="styles/feedback.css" />
     </noscript>
     <!-- Polyfill for async CSS loading (fallback for browsers that don't support preload) -->
     <script>
@@ -231,6 +232,23 @@
         </div>
       </div>
 
+      <div class="feedback-modal" id="feedback-modal" role="dialog" aria-modal="true" aria-labelledby="feedback-title">
+        <div class="modal-content feedback-modal-content">
+          <div class="modal-header">
+            <h2 id="feedback-title">💬 Feedback & Support</h2>
+            <button class="btn btn-close" id="close-feedback" aria-label="Close feedback modal">✕</button>
+          </div>
+          <div class="feedback-tabs" role="tablist" aria-label="Feedback tabs">
+            <button class="feedback-tab active" data-tab="feedback" role="tab" aria-selected="true" aria-controls="feedback-panel" id="tab-feedback">Send Feedback</button>
+            <button class="feedback-tab" data-tab="bug" role="tab" aria-selected="false" aria-controls="bug-panel" id="tab-bug">Report Bug</button>
+            <button class="feedback-tab" data-tab="feature" role="tab" aria-selected="false" aria-controls="feature-panel" id="tab-feature">Request Feature</button>
+          </div>
+          <div class="feedback-content" id="feedback-content" role="tabpanel">
+            <!-- Feedback forms will be populated here -->
+          </div>
+        </div>
+      </div>
+
       <div class="challenge-modal" id="challenge-modal" role="dialog" aria-modal="true" aria-labelledby="challenge-title">
         <div class="modal-content challenge-modal-content">
           <div class="modal-header">
@@ -311,6 +329,7 @@
     <script src="scripts/accessibility-manager.js"></script>
     <script src="scripts/audio-manager.js"></script>
     <script src="scripts/touch-accessibility.js"></script>
+    <script src="scripts/feedback-manager.js"></script>
     <script src="scripts/error-middleware.js"></script>
     <script src="scripts/utils.js"></script>
     <script src="scripts/theme-manager.js"></script>

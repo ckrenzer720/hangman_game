@@ -1202,6 +1202,11 @@ class GameUI {
   }
 
   startNewGame() {
+    // Track game start
+    if (window.feedbackManager) {
+      window.feedbackManager.trackGameStart();
+    }
+    
     this.game.hideGameOverModal();
 
     // Hide pause overlay if it's showing
@@ -1346,6 +1351,13 @@ class GameUI {
     const isPaused = this.game.gameState.isPaused;
     const incorrectCount = this.game.gameState.incorrectGuesses.length;
     const maxIncorrect = this.game.gameState.maxIncorrectGuesses;
+
+    // Track game completion for analytics
+    if (window.feedbackManager && (status === "won" || status === "lost")) {
+      const gameStartTime = this.game.gameState.gameStartTime || Date.now();
+      const duration = Date.now() - gameStartTime;
+      window.feedbackManager.trackGameCompletion(status, duration);
+    }
 
     // Update any status indicators if they exist
     const statusElement = document.getElementById("game-status");
@@ -2662,6 +2674,256 @@ class GameUI {
     // Show modal
     modal.classList.add("show");
     document.body.style.overflow = "hidden";
+  }
+
+  /**
+   * Shows the feedback modal
+   */
+  showFeedbackModal(tab = 'feedback') {
+    const modal = document.getElementById("feedback-modal");
+    const content = document.getElementById("feedback-content");
+    const tabs = document.querySelectorAll(".feedback-tab");
+
+    if (!modal || !content) return;
+
+    // Reset tabs
+    tabs.forEach(t => {
+      t.classList.remove("active");
+      t.setAttribute("aria-selected", "false");
+    });
+
+    // Activate selected tab
+    const activeTab = document.getElementById(`tab-${tab}`);
+    if (activeTab) {
+      activeTab.classList.add("active");
+      activeTab.setAttribute("aria-selected", "true");
+    }
+
+    // Populate content based on tab
+    content.innerHTML = this.getFeedbackForm(tab);
+    content.setAttribute("id", `${tab}-panel`);
+    content.setAttribute("role", "tabpanel");
+    content.setAttribute("aria-labelledby", `tab-${tab}`);
+
+    // Bind form events
+    this.bindFeedbackFormEvents(tab);
+
+    // Show modal
+    modal.classList.add("show");
+    document.body.style.overflow = "hidden";
+
+    // Focus first input
+    const firstInput = content.querySelector("input, textarea");
+    if (firstInput) {
+      setTimeout(() => firstInput.focus(), 100);
+    }
+  }
+
+  /**
+   * Hides the feedback modal
+   */
+  hideFeedbackModal() {
+    const modal = document.getElementById("feedback-modal");
+    if (modal) {
+      modal.classList.remove("show");
+      document.body.style.overflow = "";
+    }
+  }
+
+  /**
+   * Get feedback form HTML
+   * @param {string} type - Form type: 'feedback', 'bug', or 'feature'
+   */
+  getFeedbackForm(type) {
+    switch (type) {
+      case 'bug':
+        return `
+          <form class="feedback-form" id="bug-form" aria-label="Bug report form">
+            <div class="form-group">
+              <label for="bug-description">Bug Description *</label>
+              <textarea id="bug-description" name="description" rows="4" required 
+                placeholder="Describe the bug you encountered..." 
+                aria-required="true"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="bug-steps">Steps to Reproduce</label>
+              <textarea id="bug-steps" name="steps" rows="4" 
+                placeholder="1. First step...&#10;2. Second step...&#10;3. What happened..."></textarea>
+            </div>
+            <div class="form-group">
+              <label for="bug-severity">Severity</label>
+              <select id="bug-severity" name="severity">
+                <option value="low">Low - Minor issue</option>
+                <option value="medium" selected>Medium - Affects gameplay</option>
+                <option value="high">High - Game breaking</option>
+                <option value="critical">Critical - Cannot play</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Submit Bug Report</button>
+              <button type="button" class="btn btn-secondary" onclick="window.ui.hideFeedbackModal()">Cancel</button>
+            </div>
+          </form>
+        `;
+      case 'feature':
+        return `
+          <form class="feedback-form" id="feature-form" aria-label="Feature request form">
+            <div class="form-group">
+              <label for="feature-title">Feature Title *</label>
+              <input type="text" id="feature-title" name="title" required 
+                placeholder="Brief title for your feature request..." 
+                aria-required="true"></input>
+            </div>
+            <div class="form-group">
+              <label for="feature-description">Feature Description *</label>
+              <textarea id="feature-description" name="description" rows="5" required 
+                placeholder="Describe the feature you'd like to see..." 
+                aria-required="true"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="feature-category">Category</label>
+              <select id="feature-category" name="category">
+                <option value="gameplay">Gameplay</option>
+                <option value="ui">User Interface</option>
+                <option value="accessibility">Accessibility</option>
+                <option value="performance">Performance</option>
+                <option value="social">Social Features</option>
+                <option value="other" selected>Other</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Submit Feature Request</button>
+              <button type="button" class="btn btn-secondary" onclick="window.ui.hideFeedbackModal()">Cancel</button>
+            </div>
+          </form>
+        `;
+      default: // 'feedback'
+        return `
+          <form class="feedback-form" id="feedback-form" aria-label="Feedback form">
+            <div class="form-group">
+              <label for="feedback-type">Feedback Type</label>
+              <select id="feedback-type" name="type">
+                <option value="general" selected>General Feedback</option>
+                <option value="suggestion">Suggestion</option>
+                <option value="complaint">Complaint</option>
+                <option value="praise">Praise</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="feedback-message">Your Feedback *</label>
+              <textarea id="feedback-message" name="message" rows="6" required 
+                placeholder="Share your thoughts, suggestions, or experiences..." 
+                aria-required="true"></textarea>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Submit Feedback</button>
+              <button type="button" class="btn btn-secondary" onclick="window.ui.hideFeedbackModal()">Cancel</button>
+            </div>
+          </form>
+        `;
+    }
+  }
+
+  /**
+   * Bind feedback form events
+   * @param {string} type - Form type
+   */
+  bindFeedbackFormEvents(type) {
+    const form = document.getElementById(`${type}-form`);
+    if (!form) return;
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      this.handleFeedbackSubmit(type, form);
+    });
+
+    // Tab switching
+    const tabs = document.querySelectorAll(".feedback-tab");
+    tabs.forEach(tab => {
+      tab.addEventListener("click", () => {
+        const tabType = tab.getAttribute("data-tab");
+        this.showFeedbackModal(tabType);
+      });
+    });
+
+    // Close button
+    const closeBtn = document.getElementById("close-feedback");
+    if (closeBtn) {
+      closeBtn.addEventListener("click", () => {
+        this.hideFeedbackModal();
+      });
+    }
+
+    // Close on escape
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && document.getElementById("feedback-modal")?.classList.contains("show")) {
+        this.hideFeedbackModal();
+      }
+    });
+  }
+
+  /**
+   * Handle feedback form submission
+   * @param {string} type - Form type
+   * @param {HTMLFormElement} form - Form element
+   */
+  handleFeedbackSubmit(type, form) {
+    if (!window.feedbackManager) {
+      this.showFeedback("error", "Feedback system is not available. Please try again later.");
+      return;
+    }
+
+    const formData = new FormData(form);
+    let success = false;
+
+    try {
+      switch (type) {
+        case 'bug':
+          const description = formData.get("description");
+          const steps = formData.get("steps") || "";
+          const severity = formData.get("severity") || "medium";
+          
+          success = window.feedbackManager.reportBug(description, steps, null, { severity });
+          if (success) {
+            this.showFeedback("success", "Thank you! Your bug report has been submitted.");
+            form.reset();
+            setTimeout(() => this.hideFeedbackModal(), 1500);
+          }
+          break;
+
+        case 'feature':
+          const title = formData.get("title");
+          const featureDescription = formData.get("description");
+          const category = formData.get("category") || "general";
+          
+          success = window.feedbackManager.requestFeature(title, featureDescription, category);
+          if (success) {
+            this.showFeedback("success", "Thank you! Your feature request has been submitted.");
+            form.reset();
+            setTimeout(() => this.hideFeedbackModal(), 1500);
+          }
+          break;
+
+        default: // 'feedback'
+          const feedbackType = formData.get("type") || "general";
+          const message = formData.get("message");
+          
+          success = window.feedbackManager.submitFeedback(feedbackType, message);
+          if (success) {
+            this.showFeedback("success", "Thank you! Your feedback has been submitted.");
+            form.reset();
+            setTimeout(() => this.hideFeedbackModal(), 1500);
+          }
+          break;
+      }
+    } catch (error) {
+      console.error("Error submitting feedback:", error);
+      this.showFeedback("error", "Failed to submit feedback. Please try again.");
+    }
+
+    if (!success) {
+      this.showFeedback("error", "Failed to submit feedback. Please try again.");
+    }
   }
 
   /**

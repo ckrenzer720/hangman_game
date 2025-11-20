@@ -108,6 +108,9 @@ class HelpSystem {
           <button class="btn btn-secondary" onclick="helpSystem.highlightGameElements()">
             🎯 Highlight Game Elements
           </button>
+          <button class="btn btn-secondary" onclick="window.ui?.showFeedbackModal('feedback')">
+            💬 Send Feedback
+          </button>
         </div>
       </div>
     `;

@@ -97,6 +97,18 @@ if (typeof TouchAccessibilityManager !== 'undefined') {
   });
 }
 
+// Initialize feedback manager
+let feedbackManager;
+if (typeof FeedbackManager !== 'undefined') {
+  feedbackManager = new FeedbackManager({
+    enabled: true,
+    cacheManager: cacheManager,
+    preferencesManager: preferencesManager,
+    analyticsEnabled: true,
+    autoFlush: true
+  });
+}
+
 // Wait for DOM to be fully loaded
 document.addEventListener("DOMContentLoaded", async function () {
   performanceMonitor?.mark('dom-ready');
@@ -243,6 +255,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     window.accessibilityManager = accessibilityManager;
     window.audioManager = audioManager;
     window.touchAccessibilityManager = touchAccessibilityManager;
+    window.feedbackManager = feedbackManager;
 
     // Capture final initialization metrics
     performanceMonitor?.mark('app-ready');
