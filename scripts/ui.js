@@ -1694,17 +1694,27 @@ class GameUI {
   // ========================================
 
   showStatistics() {
-    const modal = document.getElementById("statistics-modal");
-    if (modal) {
-      this.populateStatisticsDashboard();
-      modal.classList.add("show");
+    this.populateStatisticsDashboard();
+    if (window.modalManager) {
+      window.modalManager.show("statistics-modal");
+    } else {
+      // Fallback
+      const modal = document.getElementById("statistics-modal");
+      if (modal) {
+        modal.classList.add("show");
+      }
     }
   }
 
   hideStatistics() {
-    const modal = document.getElementById("statistics-modal");
-    if (modal) {
-      modal.classList.remove("show");
+    if (window.modalManager) {
+      window.modalManager.hide("statistics-modal");
+    } else {
+      // Fallback
+      const modal = document.getElementById("statistics-modal");
+      if (modal) {
+        modal.classList.remove("show");
+      }
     }
   }
 
@@ -2604,10 +2614,8 @@ class GameUI {
    * Shows the settings modal
    */
   showSettings() {
-    const modal = document.getElementById("settings-modal");
     const content = document.getElementById("settings-content");
-
-    if (!modal || !content) return;
+    if (!content) return;
 
     // Get theme manager from global scope
     const themeManager = window.themeManager;
@@ -2619,24 +2627,42 @@ class GameUI {
     // Populate settings content
     content.innerHTML = themeManager.createSettingsUI();
 
-    // Show modal
-    modal.classList.add("show");
-    document.body.style.overflow = "hidden";
-
-    // Update theme previews after content is rendered
-    setTimeout(() => {
-      themeManager.updateThemePreviews();
-    }, 100);
+    // Show modal using ModalManager
+    if (window.modalManager) {
+      window.modalManager.show("settings-modal", {
+        onShow: () => {
+          // Update theme previews after content is rendered
+          setTimeout(() => {
+            themeManager.updateThemePreviews();
+          }, 100);
+        }
+      });
+    } else {
+      // Fallback for older code
+      const modal = document.getElementById("settings-modal");
+      if (modal) {
+        modal.classList.add("show");
+        document.body.style.overflow = "hidden";
+        setTimeout(() => {
+          themeManager.updateThemePreviews();
+        }, 100);
+      }
+    }
   }
 
   /**
    * Hides the settings modal
    */
   hideSettings() {
-    const modal = document.getElementById("settings-modal");
-    if (modal) {
-      modal.classList.remove("show");
-      document.body.style.overflow = "";
+    if (window.modalManager) {
+      window.modalManager.hide("settings-modal");
+    } else {
+      // Fallback
+      const modal = document.getElementById("settings-modal");
+      if (modal) {
+        modal.classList.remove("show");
+        document.body.style.overflow = "";
+      }
     }
   }
 
@@ -2708,14 +2734,25 @@ class GameUI {
     // Bind form events
     this.bindFeedbackFormEvents(tab);
 
-    // Show modal
-    modal.classList.add("show");
-    document.body.style.overflow = "hidden";
-
-    // Focus first input
-    const firstInput = content.querySelector("input, textarea");
-    if (firstInput) {
-      setTimeout(() => firstInput.focus(), 100);
+    // Show modal using ModalManager
+    if (window.modalManager) {
+      window.modalManager.show("feedback-modal", {
+        onShow: () => {
+          // Focus first input
+          const firstInput = content.querySelector("input, textarea");
+          if (firstInput) {
+            setTimeout(() => firstInput.focus(), 100);
+          }
+        }
+      });
+    } else {
+      // Fallback
+      modal.classList.add("show");
+      document.body.style.overflow = "hidden";
+      const firstInput = content.querySelector("input, textarea");
+      if (firstInput) {
+        setTimeout(() => firstInput.focus(), 100);
+      }
     }
   }
 
@@ -2723,10 +2760,15 @@ class GameUI {
    * Hides the feedback modal
    */
   hideFeedbackModal() {
-    const modal = document.getElementById("feedback-modal");
-    if (modal) {
-      modal.classList.remove("show");
-      document.body.style.overflow = "";
+    if (window.modalManager) {
+      window.modalManager.hide("feedback-modal");
+    } else {
+      // Fallback
+      const modal = document.getElementById("feedback-modal");
+      if (modal) {
+        modal.classList.remove("show");
+        document.body.style.overflow = "";
+      }
     }
   }
 

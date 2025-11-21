@@ -825,22 +825,35 @@ class HangmanGame {
   }
 
   showGameOverModal(result, word) {
-    const modal = document.getElementById("game-over-modal");
     const resultElement = document.getElementById("game-result");
     const wordElement = document.getElementById("correct-word");
 
-    if (modal && resultElement && wordElement) {
+    if (resultElement && wordElement) {
       resultElement.textContent = result;
       resultElement.className = result === "You Won!" ? "win" : "lose";
       wordElement.textContent = `The word was: ${word.toUpperCase()}`;
-      modal.classList.add("show");
+    }
+
+    if (window.modalManager) {
+      window.modalManager.show("game-over-modal");
+    } else {
+      // Fallback
+      const modal = document.getElementById("game-over-modal");
+      if (modal) {
+        modal.classList.add("show");
+      }
     }
   }
 
   hideGameOverModal() {
-    const modal = document.getElementById("game-over-modal");
-    if (modal) {
-      modal.classList.remove("show");
+    if (window.modalManager) {
+      window.modalManager.hide("game-over-modal");
+    } else {
+      // Fallback
+      const modal = document.getElementById("game-over-modal");
+      if (modal) {
+        modal.classList.remove("show");
+      }
     }
   }
 
