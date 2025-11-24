@@ -22,8 +22,13 @@
     <!-- Polyfill for async CSS loading (fallback for browsers that don't support preload) -->
     <script>
       (function() {
+        if ('relList' in document.createElement('link')) {
+          // Modern browsers support preload, no polyfill needed
+          return;
+        }
         var links = document.querySelectorAll('link[rel="preload"][as="style"]');
-        for (var i = 0; i < links.length; i++) {
+        var len = links.length;
+        for (var i = 0; i < len; i++) {
           var link = links[i];
           if (link.onload === null) {
             link.onload = function() {
@@ -317,30 +322,33 @@
       </div>
     </div>
 
-    <!-- Critical scripts - Load immediately -->
+    <!-- Critical scripts - Load immediately (blocking) -->
     <script src="scripts/performance-monitor.js"></script>
     <script src="scripts/lazy-loader.js"></script>
     <script src="scripts/memory-optimizer.js"></script>
     <script src="scripts/cache-manager.js"></script>
     <script src="scripts/dom-utils.js"></script>
     <script src="scripts/modal-manager.js"></script>
-    <script src="scripts/offline-manager.js"></script>
-    <script src="scripts/progress-manager.js"></script>
-    <script src="scripts/preferences-manager.js"></script>
-    <script src="scripts/data-validator.js"></script>
-    <script src="scripts/accessibility-manager.js"></script>
-    <script src="scripts/audio-manager.js"></script>
-    <script src="scripts/touch-accessibility.js"></script>
-    <script src="scripts/feedback-manager.js"></script>
     <script src="scripts/error-middleware.js"></script>
     <script src="scripts/utils.js"></script>
-    <script src="scripts/theme-manager.js"></script>
-    <script src="scripts/game.js"></script>
-    <script src="scripts/ui.js"></script>
+    
+    <!-- Core game scripts - Load with defer (non-blocking, execute in order) -->
+    <script src="scripts/offline-manager.js" defer></script>
+    <script src="scripts/progress-manager.js" defer></script>
+    <script src="scripts/preferences-manager.js" defer></script>
+    <script src="scripts/data-validator.js" defer></script>
+    <script src="scripts/accessibility-manager.js" defer></script>
+    <script src="scripts/audio-manager.js" defer></script>
+    <script src="scripts/touch-accessibility.js" defer></script>
+    <script src="scripts/feedback-manager.js" defer></script>
+    <script src="scripts/theme-manager.js" defer></script>
+    <script src="scripts/game.js" defer></script>
+    <script src="scripts/ui.js" defer></script>
     
     <!-- Non-critical scripts - Load lazily on demand -->
     <!-- help-system.js, challenge-system.js, share-system.js will be loaded when needed -->
     
-    <script src="scripts/main.js"></script>
+    <!-- Main initialization - Must load after all dependencies -->
+    <script src="scripts/main.js" defer></script>
   </body>
 </html>

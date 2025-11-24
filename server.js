@@ -1,6 +1,7 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const zlib = require("zlib");
 
 // MIME types for different file extensions
 const mimeTypes = {
@@ -14,6 +15,22 @@ const mimeTypes = {
   ".svg": "image/svg+xml",
   ".ico": "image/x-icon",
 };
+
+// Cache control headers (in seconds)
+const cacheControl = {
+  ".html": 0, // No cache for HTML
+  ".css": 86400, // 1 day for CSS
+  ".js": 86400, // 1 day for JS
+  ".json": 3600, // 1 hour for JSON
+  ".png": 604800, // 7 days for images
+  ".jpg": 604800,
+  ".gif": 604800,
+  ".svg": 604800,
+  ".ico": 2592000, // 30 days for favicon
+};
+
+// Files that should be compressed
+const compressibleTypes = [".html", ".css", ".js", ".json", ".svg"];
 
 // Port configuration
 const PORT = process.env.PORT || 3000;

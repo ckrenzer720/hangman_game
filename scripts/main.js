@@ -239,23 +239,30 @@ document.addEventListener("DOMContentLoaded", async function () {
     performanceMonitor?.mark('ui-init-complete');
     performanceMonitor?.measure('ui-initialization', 'ui-init-start', 'ui-init-complete');
 
-    // Make game and UI globally accessible for debugging
-    window.game = game;
-    window.ui = ui;
-    window.errorMiddleware = errorMiddleware;
-    window.themeManager = themeManager;
-    window.performanceMonitor = performanceMonitor;
-    window.lazyLoader = lazyLoader;
-    window.memoryOptimizer = memoryOptimizer;
-    window.cacheManager = cacheManager;
-    window.offlineManager = offlineManager;
-    window.progressManager = progressManager;
-    window.preferencesManager = preferencesManager;
-    window.dataValidator = dataValidator;
-    window.accessibilityManager = accessibilityManager;
-    window.audioManager = audioManager;
-    window.touchAccessibilityManager = touchAccessibilityManager;
-    window.feedbackManager = feedbackManager;
+    // Make game and UI globally accessible for debugging (only in development)
+    // In production, these can be removed or conditionally assigned
+    const isDevelopment = window.location.hostname === 'localhost' || 
+                          window.location.hostname === '127.0.0.1' ||
+                          window.location.search.includes('debug=true');
+    
+    if (isDevelopment) {
+      window.game = game;
+      window.ui = ui;
+      window.errorMiddleware = errorMiddleware;
+      window.themeManager = themeManager;
+      window.performanceMonitor = performanceMonitor;
+      window.lazyLoader = lazyLoader;
+      window.memoryOptimizer = memoryOptimizer;
+      window.cacheManager = cacheManager;
+      window.offlineManager = offlineManager;
+      window.progressManager = progressManager;
+      window.preferencesManager = preferencesManager;
+      window.dataValidator = dataValidator;
+      window.accessibilityManager = accessibilityManager;
+      window.audioManager = audioManager;
+      window.touchAccessibilityManager = touchAccessibilityManager;
+      window.feedbackManager = feedbackManager;
+    }
 
     // Capture final initialization metrics
     performanceMonitor?.mark('app-ready');
