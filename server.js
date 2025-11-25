@@ -35,6 +35,19 @@ const compressibleTypes = [".html", ".css", ".js", ".json", ".svg"];
 // Port configuration
 const PORT = process.env.PORT || 3000;
 
+// Helper function to compress content
+function compressContent(content, encoding, callback) {
+  if (encoding === "gzip") {
+    zlib.gzip(content, callback);
+  } else if (encoding === "deflate") {
+    zlib.deflate(content, callback);
+  } else if (encoding === "br") {
+    zlib.brotliCompress(content, callback);
+  } else {
+    callback(null, content);
+  }
+}
+
 // Create HTTP server
 const server = http.createServer((req, res) => {
   // Parse URL and get file path
@@ -48,6 +61,15 @@ const server = http.createServer((req, res) => {
   // Get file extension
   const extname = String(path.extname(filePath)).toLowerCase();
   const mimeType = mimeTypes[extname] || "application/octet-stream";
+  const cacheMaxAge = cacheControl[extname] || 0;
+  const shouldCompress = compressibleTypes.includes(extname);
+
+  // Check if client accepts compression
+  const acceptEncoding = req.headers["accept-encoding"] || "";
+  const supportsGzip = acceptEncoding.includes("gzip");
+  const supportsDeflate = acceptEncoding.includes("deflate");
+  const supportsBrotli = acceptEncoding.includes("br");
+  const encoding = supportsBrotli ? "br" : supportsGzip ? "gzip" : supportsDeflate ? "deflate" : null;
 
   // Read and serve file
   fs.readFile(filePath, (error, content) => {
@@ -80,9 +102,39 @@ const server = http.createServer((req, res) => {
         res.end(`Server Error: ${error.code}`);
       }
     } else {
-      // Success - serve file
-      res.writeHead(200, { "Content-Type": mimeType });
-      res.end(content, "utf-8");
+      // Prepare headers
+      const headers = {
+        "Content-Type": mimeType,
+        "Cache-Control": cacheMaxAge > 0 
+          ? `public, max-age=${cacheMaxAge}` 
+          : "no-cache, no-store, must-revalidate",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "X-XSS-Protection": "1; mode=block",
+      };
+
+      // Add compression headers if applicable
+      if (shouldCompress && encoding) {
+        headers["Content-Encoding"] = encoding;
+        headers["Vary"] = "Accept-Encoding";
+        
+        // Compress content
+        compressContent(content, encoding, (err, compressed) => {
+          if (err) {
+            // If compression fails, serve uncompressed
+            res.writeHead(200, headers);
+            res.end(content, "utf-8");
+          } else {
+            headers["Content-Length"] = compressed.length;
+            res.writeHead(200, headers);
+            res.end(compressed);
+          }
+        });
+      } else {
+        // Serve uncompressed
+        res.writeHead(200, headers);
+        res.end(content, "utf-8");
+      }
     }
   });
 });
