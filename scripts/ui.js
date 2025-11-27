@@ -742,7 +742,12 @@ class GameUI {
       modal.classList.remove("show");
       document.body.style.overflow = "";
     }
-    // Get player info before disabling
+    // Get player info before disabling - with safety check
+    if (!this.game.gameState.multiplayer || !this.game.gameState.multiplayer.players) {
+      console.error("Multiplayer state not initialized");
+      this.showFeedback("error", "Multiplayer game state not found. Please start a new multiplayer game.");
+      return;
+    }
     const players = this.game.gameState.multiplayer.players.map(p => p.name);
     const totalRounds = this.game.gameState.multiplayer.totalRounds;
     // Restart with same players

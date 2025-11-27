@@ -464,6 +464,25 @@ class HangmanGame {
   }
 
   selectRandomWord() {
+    // Ensure gameState and practiceMode are initialized
+    if (!this.gameState) {
+      console.error("gameState is not initialized");
+      return;
+    }
+    if (!this.gameState.practiceMode) {
+      this.gameState.practiceMode = {
+        enabled: false,
+        allowRepeats: true,
+        endless: true,
+        lockedDifficulty: null,
+        maxMistakesOverride: null,
+        wordLengthFilter: null,
+        hintsUsed: 0,
+        scorePenaltyMultiplier: 1,
+        seenWordsByKey: {},
+      };
+    }
+    
     // Check if words are loaded
     if (
       !this.wordsLoaded ||
@@ -496,8 +515,8 @@ class HangmanGame {
 
     // Apply word-length filter in practice mode
     if (
-      this.gameState.practiceMode.enabled &&
-      this.gameState.practiceMode.wordLengthFilter
+      this.gameState.practiceMode?.enabled &&
+      this.gameState.practiceMode?.wordLengthFilter
     ) {
       const { min, max } = this.gameState.practiceMode.wordLengthFilter;
       filtered = filtered.filter((w) => {
@@ -508,14 +527,17 @@ class HangmanGame {
 
     // Apply repeat filtering in practice mode
     if (
-      this.gameState.practiceMode.enabled &&
-      this.gameState.practiceMode.allowRepeats === false
+      this.gameState.practiceMode?.enabled &&
+      this.gameState.practiceMode?.allowRepeats === false
     ) {
       const key = `${this.gameState.difficulty}-${this.gameState.category}`;
-      const seen = this.gameState.practiceMode.seenWordsByKey[key] || new Set();
+      const seen = this.gameState.practiceMode.seenWordsByKey?.[key] || new Set();
       filtered = filtered.filter((w) => !seen.has(w));
       if (filtered.length === 0) {
         // Reset seen set if exhausted
+        if (!this.gameState.practiceMode.seenWordsByKey) {
+          this.gameState.practiceMode.seenWordsByKey = {};
+        }
         this.gameState.practiceMode.seenWordsByKey[key] = new Set();
         filtered = categoryWords.map((w) => w.toLowerCase());
       }
@@ -525,8 +547,11 @@ class HangmanGame {
     this.gameState.currentWord = filtered[randomIndex];
 
     // Mark as seen in practice mode
-    if (this.gameState.practiceMode.enabled) {
+    if (this.gameState.practiceMode?.enabled) {
       const key = `${this.gameState.difficulty}-${this.gameState.category}`;
+      if (!this.gameState.practiceMode.seenWordsByKey) {
+        this.gameState.practiceMode.seenWordsByKey = {};
+      }
       if (!this.gameState.practiceMode.seenWordsByKey[key]) {
         this.gameState.practiceMode.seenWordsByKey[key] = new Set();
       }
@@ -691,7 +716,7 @@ class HangmanGame {
       this.showGameOverModal("You Won!", this.gameState.currentWord);
 
       // Auto-continue in practice endless mode
-      if (this.gameState.practiceMode.enabled && this.gameState.practiceMode.endless) {
+      if (this.gameState.practiceMode?.enabled && this.gameState.practiceMode?.endless) {
         setTimeout(() => {
           this.hideGameOverModal();
           this.resetGame();
@@ -795,7 +820,7 @@ class HangmanGame {
       this.showGameOverModal("Game Over!", this.gameState.currentWord);
 
       // Auto-continue in practice endless mode
-      if (this.gameState.practiceMode.enabled && this.gameState.practiceMode.endless) {
+      if (this.gameState.practiceMode?.enabled && this.gameState.practiceMode?.endless) {
         setTimeout(() => {
           this.hideGameOverModal();
           this.resetGame();
@@ -861,6 +886,30 @@ class HangmanGame {
     // Stop countdown timer
     this.stopCountdownTimer();
 
+    // Preserve nested objects before reset - ensure they're always properly initialized
+    const existingPracticeMode = this.gameState?.practiceMode;
+    const practiceMode = {
+      enabled: existingPracticeMode?.enabled ?? false,
+      allowRepeats: existingPracticeMode?.allowRepeats ?? true,
+      endless: existingPracticeMode?.endless ?? true,
+      lockedDifficulty: existingPracticeMode?.lockedDifficulty ?? null,
+      maxMistakesOverride: existingPracticeMode?.maxMistakesOverride ?? null,
+      wordLengthFilter: existingPracticeMode?.wordLengthFilter ?? null,
+      hintsUsed: existingPracticeMode?.hintsUsed ?? 0,
+      scorePenaltyMultiplier: existingPracticeMode?.scorePenaltyMultiplier ?? 1,
+      seenWordsByKey: existingPracticeMode?.seenWordsByKey ? { ...existingPracticeMode.seenWordsByKey } : {},
+    };
+    
+    const existingMultiplayer = this.gameState?.multiplayer;
+    const multiplayer = {
+      enabled: existingMultiplayer?.enabled ?? false,
+      players: existingMultiplayer?.players ? [...existingMultiplayer.players] : [],
+      currentPlayerIndex: existingMultiplayer?.currentPlayerIndex ?? 0,
+      roundsPlayed: existingMultiplayer?.roundsPlayed ?? 0,
+      totalRounds: existingMultiplayer?.totalRounds ?? null,
+      passAndPlay: existingMultiplayer?.passAndPlay ?? true,
+    };
+
     this.gameState = {
       currentWord: "",
       hiddenWord: "",
@@ -881,6 +930,9 @@ class HangmanGame {
         ? this.gameState.timeLimit
         : 60000,
       bestTimes: this.gameState.bestTimes,
+      // Preserve practice mode and multiplayer settings
+      practiceMode: practiceMode,
+      multiplayer: multiplayer,
     };
 
     // Reset hangman figure
@@ -1009,7 +1061,7 @@ class HangmanGame {
       }
 
       // Practice mode: apply hint penalty
-      if (this.gameState.practiceMode.enabled) {
+      if (this.gameState.practiceMode?.enabled) {
         this.gameState.practiceMode.hintsUsed += 1;
         // -10% score per hint (multiplicative)
         this.gameState.practiceMode.scorePenaltyMultiplier *= 0.9;
@@ -1066,7 +1118,7 @@ class HangmanGame {
 
   updateDifficultyProgression() {
     // Disable progression in practice mode
-    if (!this.difficultyProgression.enabled || this.gameState.practiceMode.enabled)
+    if (!this.difficultyProgression.enabled || this.gameState.practiceMode?.enabled)
       return;
 
     this.difficultyProgression.consecutiveWins++;
@@ -1148,7 +1200,7 @@ class HangmanGame {
       (baseScore + efficiencyBonus + timeBonus) * difficultyMultiplier;
 
     // Apply practice hint penalties
-    if (this.gameState.practiceMode.enabled) {
+    if (this.gameState.practiceMode?.enabled) {
       totalScore = Math.round(totalScore * this.gameState.practiceMode.scorePenaltyMultiplier);
     }
     return Math.max(50, totalScore); // Minimum score of 50
@@ -1251,7 +1303,7 @@ class HangmanGame {
 
   checkAchievements() {
     // Disable achievements in practice mode
-    if (this.gameState.practiceMode.enabled) {
+    if (this.gameState.practiceMode?.enabled) {
       return;
     }
     const stats = this.statistics;
@@ -2005,7 +2057,7 @@ class HangmanGame {
     this.saveStatistics();
 
     // Practice progress tracking
-    if (this.gameState.practiceMode.enabled) {
+    if (this.gameState.practiceMode?.enabled) {
       this.updatePracticeProgress(gameResult);
       this.savePracticeProgress();
     }
@@ -2021,6 +2073,20 @@ class HangmanGame {
   // ========================================
 
   enablePracticeMode(config = {}) {
+    // Ensure practiceMode is initialized
+    if (!this.gameState.practiceMode) {
+      this.gameState.practiceMode = {
+        enabled: false,
+        allowRepeats: true,
+        endless: true,
+        lockedDifficulty: null,
+        maxMistakesOverride: null,
+        wordLengthFilter: null,
+        hintsUsed: 0,
+        scorePenaltyMultiplier: 1,
+        seenWordsByKey: {},
+      };
+    }
     this.gameState.practiceMode.enabled = true;
     this.gameState.practiceMode.allowRepeats =
       config.allowRepeats ?? this.gameState.practiceMode.allowRepeats;
@@ -2047,6 +2113,20 @@ class HangmanGame {
   }
 
   disablePracticeMode() {
+    // Ensure practiceMode is initialized
+    if (!this.gameState.practiceMode) {
+      this.gameState.practiceMode = {
+        enabled: false,
+        allowRepeats: true,
+        endless: true,
+        lockedDifficulty: null,
+        maxMistakesOverride: null,
+        wordLengthFilter: null,
+        hintsUsed: 0,
+        scorePenaltyMultiplier: 1,
+        seenWordsByKey: {},
+      };
+    }
     this.gameState.practiceMode.enabled = false;
     this.gameState.practiceMode.hintsUsed = 0;
     this.gameState.practiceMode.scorePenaltyMultiplier = 1;
