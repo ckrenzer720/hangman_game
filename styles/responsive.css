@@ -267,11 +267,13 @@
     grid-row: 4;
     flex-wrap: wrap;
     justify-content: center;
+    overflow-x: auto;
+    overflow-y: visible;
   }
 
   .btn {
     min-width: 100px;
-    flex: 1;
+    flex: 0 0 auto;
     max-width: 150px;
   }
 }
@@ -330,6 +332,15 @@
   .controls-section {
     grid-column: 1 / -1;
     grid-row: 3;
+    flex-wrap: wrap;
+    justify-content: center;
+    overflow-x: auto;
+    overflow-y: visible;
+  }
+
+  .controls-section .btn {
+    flex: 0 0 auto;
+    min-width: 120px;
   }
 }
 
@@ -387,6 +398,15 @@
   .controls-section {
     grid-column: 1 / -1;
     grid-row: 3;
+    flex-wrap: wrap;
+    justify-content: center;
+    overflow-x: auto;
+    overflow-y: visible;
+  }
+
+  .controls-section .btn {
+    flex: 0 0 auto;
+    min-width: 120px;
   }
 }
 
@@ -451,6 +471,15 @@
   .controls-section {
     grid-column: 1 / -1;
     grid-row: 3;
+    flex-wrap: wrap;
+    justify-content: center;
+    overflow-x: auto;
+    overflow-y: visible;
+  }
+
+  .controls-section .btn {
+    flex: 0 0 auto;
+    min-width: 120px;
   }
 }
 
@@ -530,12 +559,16 @@
     grid-row: 2;
     flex-direction: row;
     padding: var(--spacing-md);
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
   }
 
   .btn {
     padding: var(--spacing-sm) var(--spacing-md);
     font-size: 0.9rem;
     min-width: 80px;
+    flex: 0 0 auto;
   }
 }
 

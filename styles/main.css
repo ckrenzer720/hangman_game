@@ -441,6 +441,29 @@ body {
   border: 1px solid var(--light-gray);
   border-radius: var(--border-radius-sm);
   padding: var(--spacing-xl);
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--light-gray) transparent;
+}
+
+.controls-section::-webkit-scrollbar {
+  height: 8px;
+}
+
+.controls-section::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 4px;
+}
+
+.controls-section::-webkit-scrollbar-thumb {
+  background: var(--light-gray);
+  border-radius: 4px;
+}
+
+.controls-section::-webkit-scrollbar-thumb:hover {
+  background: var(--dark-gray);
 }
 
 /* ========================================
@@ -457,7 +480,9 @@ body {
   font-weight: bold;
   cursor: pointer;
   transition: all var(--transition-fast);
+  flex: 0 0 auto;
   min-width: 120px;
+  white-space: nowrap;
 }
 
 .btn:hover {
