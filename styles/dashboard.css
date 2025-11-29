@@ -543,6 +543,16 @@
   gap: 15px;
   justify-content: flex-end;
   border-radius: 0 0 12px 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  flex-wrap: wrap;
+}
+
+.modal-actions .btn {
+  flex: 0 0 auto;
+  min-width: fit-content;
+  white-space: nowrap;
 }
 
 /* Animation for dashboard loading */

@@ -390,6 +390,8 @@
   border-radius: var(--border-radius-sm);
   padding: var(--spacing-xxl);
   text-align: center;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 /* ========================================
@@ -518,6 +520,38 @@
   margin-top: var(--spacing-xl);
   padding-top: var(--spacing-lg);
   border-top: 1px solid var(--light-gray);
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--light-gray) transparent;
+  flex-wrap: wrap;
+  padding-left: var(--spacing-md);
+  padding-right: var(--spacing-md);
+}
+
+.modal-actions::-webkit-scrollbar {
+  height: 6px;
+}
+
+.modal-actions::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.modal-actions::-webkit-scrollbar-thumb {
+  background: var(--light-gray);
+  border-radius: 3px;
+}
+
+.modal-actions::-webkit-scrollbar-thumb:hover {
+  background: var(--dark-gray);
+}
+
+.modal-actions .btn {
+  flex: 0 0 auto;
+  min-width: fit-content;
+  white-space: nowrap;
 }
 
 .statistics-grid {

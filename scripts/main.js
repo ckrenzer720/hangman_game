@@ -109,6 +109,18 @@ if (typeof FeedbackManager !== 'undefined') {
   });
 }
 
+// Start prefetching words.json early (before DOM ready)
+if (typeof CacheManager !== 'undefined' && typeof fetch !== 'undefined') {
+  // Prefetch words.json in background immediately
+  fetch('data/words.json', { 
+    method: 'GET',
+    cache: 'default',
+    priority: 'high'
+  }).catch(() => {
+    // Silently fail - will retry during normal load
+  });
+}
+
 // Wait for DOM to be fully loaded
 document.addEventListener("DOMContentLoaded", async function () {
   performanceMonitor?.mark('dom-ready');
