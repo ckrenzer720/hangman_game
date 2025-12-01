@@ -270,8 +270,8 @@ Phase 2 focuses on enhancing the core hangman game with advanced features, impro
 
 ### Technical Metrics
 
-- [ ] Page load time < 2 seconds
-- [ ] 100% keyboard accessibility
+- [x] Page load time < 2 seconds
+- [x] 100% keyboard accessibility
 - [ ] Cross-browser compatibility (Chrome, Firefox, Safari, Edge)
 - [ ] Mobile responsiveness on all devices
 - [ ] Zero critical bugs

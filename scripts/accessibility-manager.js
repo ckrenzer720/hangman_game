@@ -166,15 +166,23 @@ class AccessibilityManager {
    * @param {Element} container - Container element
    * @param {Element} firstFocus - First focusable element (optional)
    * @param {Element} lastFocus - Last focusable element (optional)
+   * @returns {Function} Cleanup function to remove focus trap
    */
   trapFocus(container, firstFocus = null, lastFocus = null) {
-    if (!container) return;
+    if (!container) return null;
 
-    const focusableElements = container.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
+    const getFocusableElements = () => {
+      const selector = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+      return Array.from(container.querySelectorAll(selector)).filter(el => {
+        return !el.disabled && 
+               el.offsetWidth > 0 && 
+               el.offsetHeight > 0 &&
+               window.getComputedStyle(el).visibility !== 'hidden';
+      });
+    };
 
-    if (focusableElements.length === 0) return;
+    const focusableElements = getFocusableElements();
+    if (focusableElements.length === 0) return null;
 
     const first = firstFocus || focusableElements[0];
     const last = lastFocus || focusableElements[focusableElements.length - 1];
@@ -182,17 +190,24 @@ class AccessibilityManager {
     const handleTab = (e) => {
       if (e.key !== 'Tab') return;
 
+      // Re-get focusable elements in case they changed
+      const currentFocusable = getFocusableElements();
+      if (currentFocusable.length === 0) return;
+
+      const currentFirst = firstFocus || currentFocusable[0];
+      const currentLast = lastFocus || currentFocusable[currentFocusable.length - 1];
+
       if (e.shiftKey) {
         // Shift + Tab
-        if (document.activeElement === first) {
+        if (document.activeElement === currentFirst) {
           e.preventDefault();
-          last.focus();
+          currentLast.focus();
         }
       } else {
         // Tab
-        if (document.activeElement === last) {
+        if (document.activeElement === currentLast) {
           e.preventDefault();
-          first.focus();
+          currentFirst.focus();
         }
       }
     };
@@ -201,7 +216,7 @@ class AccessibilityManager {
     
     // Focus first element
     if (first) {
-      first.focus();
+      setTimeout(() => first.focus(), 0);
     }
 
     // Return cleanup function

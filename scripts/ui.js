@@ -13,6 +13,13 @@ class GameUI {
     this.bindEvents();
     this.initializeProgressIndicators();
     this.setupSettingsListeners();
+    
+    // Re-enhance keyboard accessibility after UI is initialized
+    if (window.keyboardAccessibilityEnhancer) {
+      setTimeout(() => {
+        window.keyboardAccessibilityEnhancer.reEnhance();
+      }, 100);
+    }
   }
 
   createVirtualKeyboard() {

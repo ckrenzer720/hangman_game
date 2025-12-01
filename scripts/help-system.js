@@ -231,6 +231,54 @@ class HelpSystem {
               </div>
               <div class="shortcut-item">
                 <div class="shortcut-keys">
+                  <kbd>Shift</kbd> + <kbd>Tab</kbd>
+                </div>
+                <div class="shortcut-description">
+                  Navigate backwards between elements
+                </div>
+              </div>
+              <div class="shortcut-item">
+                <div class="shortcut-keys">
+                  <kbd>Enter</kbd> or <kbd>Space</kbd>
+                </div>
+                <div class="shortcut-description">
+                  Activate focused button or link
+                </div>
+              </div>
+              <div class="shortcut-item">
+                <div class="shortcut-keys">
+                  <kbd>Home</kbd>
+                </div>
+                <div class="shortcut-description">
+                  Focus first item in a list
+                </div>
+              </div>
+              <div class="shortcut-item">
+                <div class="shortcut-keys">
+                  <kbd>End</kbd>
+                </div>
+                <div class="shortcut-description">
+                  Focus last item in a list
+                </div>
+              </div>
+              <div class="shortcut-item">
+                <div class="shortcut-keys">
+                  <kbd>Alt</kbd> + <kbd>S</kbd>
+                </div>
+                <div class="shortcut-description">
+                  Skip to main content
+                </div>
+              </div>
+              <div class="shortcut-item">
+                <div class="shortcut-keys">
+                  <kbd>Alt</kbd> + <kbd>H</kbd>
+                </div>
+                <div class="shortcut-description">
+                  Open help (alternative shortcut)
+                </div>
+              </div>
+              <div class="shortcut-item">
+                <div class="shortcut-keys">
                   <kbd>N</kbd>
                 </div>
                 <div class="shortcut-description">

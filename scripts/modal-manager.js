@@ -79,11 +79,28 @@ class ModalManager {
     }
 
     // Focus first focusable element
-    const firstFocusable = modal.querySelector(
-      'input, button, textarea, select, [tabindex]:not([tabindex="-1"])'
-    );
-    if (firstFocusable) {
-      setTimeout(() => firstFocusable.focus(), 100);
+    const getFocusableElements = () => {
+      const selector = 'input, button, textarea, select, [tabindex]:not([tabindex="-1"])';
+      return Array.from(modal.querySelectorAll(selector)).filter(el => {
+        return !el.disabled && 
+               el.offsetWidth > 0 && 
+               el.offsetHeight > 0 &&
+               window.getComputedStyle(el).visibility !== 'hidden';
+      });
+    };
+    
+    const focusableElements = getFocusableElements();
+    if (focusableElements.length > 0) {
+      setTimeout(() => focusableElements[0].focus(), 100);
+    }
+    
+    // Setup focus trap if accessibility manager is available
+    if (window.accessibilityManager) {
+      const cleanup = window.accessibilityManager.trapFocus(modal);
+      if (cleanup) {
+        // Store cleanup function for when modal closes
+        modal._focusTrapCleanup = cleanup;
+      }
     }
 
     // Call onShow callback
@@ -122,6 +139,17 @@ class ModalManager {
     // Remove show class
     modal.classList.remove('show');
     this.openModals.delete(modal);
+
+    // Cleanup focus trap
+    if (modal._focusTrapCleanup) {
+      modal._focusTrapCleanup();
+      delete modal._focusTrapCleanup;
+    }
+
+    // Restore focus to element that opened modal
+    if (window.accessibilityManager && this.openModals.size === 0) {
+      window.accessibilityManager.restoreFocus();
+    }
 
     // Unlock body scroll if no other modals are open
     if (this.openModals.size === 0) {
