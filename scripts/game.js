@@ -496,9 +496,30 @@ class HangmanGame {
     const difficultyWords = this.wordLists[this.gameState.difficulty];
     if (!difficultyWords) {
       console.error(`Invalid difficulty: ${this.gameState.difficulty}`);
-      this.gameState.difficulty = "medium";
-      return this.selectRandomWord();
+      // Try to find a valid difficulty
+      const validDifficulties = Object.keys(this.wordLists).filter(d => {
+        const diffWords = this.wordLists[d];
+        return diffWords && Object.keys(diffWords).length > 0;
+      });
+      
+      if (validDifficulties.length > 0) {
+        this.gameState.difficulty = validDifficulties[0];
+        // Prevent infinite recursion by limiting retries
+        if (!this._selectWordRetryCount) {
+          this._selectWordRetryCount = 0;
+        }
+        this._selectWordRetryCount++;
+        if (this._selectWordRetryCount < 5) {
+          return this.selectRandomWord();
+        }
+      }
+      console.error("No valid difficulty found. Cannot select word.");
+      this._selectWordRetryCount = 0;
+      return;
     }
+    
+    // Reset retry count on successful difficulty lookup
+    this._selectWordRetryCount = 0;
 
     const categoryWords = difficultyWords[this.gameState.category];
     if (!categoryWords || categoryWords.length === 0) {
@@ -507,6 +528,25 @@ class HangmanGame {
       );
       // Fallback to first available category
       const availableCategories = Object.keys(difficultyWords);
+      if (availableCategories.length === 0) {
+        console.error("No categories available for difficulty:", this.gameState.difficulty);
+        // Try to fallback to a different difficulty
+        const allDifficulties = Object.keys(this.wordLists);
+        const fallbackDifficulty = allDifficulties.find(d => {
+          const diffWords = this.wordLists[d];
+          return diffWords && Object.keys(diffWords).length > 0;
+        });
+        if (fallbackDifficulty) {
+          this.gameState.difficulty = fallbackDifficulty;
+          const fallbackCategories = Object.keys(this.wordLists[fallbackDifficulty]);
+          if (fallbackCategories.length > 0) {
+            this.gameState.category = fallbackCategories[0];
+            return this.selectRandomWord();
+          }
+        }
+        console.error("No valid words available. Cannot select word.");
+        return;
+      }
       this.gameState.category = availableCategories[0];
       return this.selectRandomWord();
     }
@@ -543,8 +583,30 @@ class HangmanGame {
       }
     }
 
+    // Safety check: ensure we have words to select from
+    if (filtered.length === 0) {
+      console.error("No words available after filtering. Resetting filter and retrying.");
+      // Reset seen words if in practice mode to allow retry
+      if (this.gameState.practiceMode?.enabled && this.gameState.practiceMode?.allowRepeats === false) {
+        const key = `${this.gameState.difficulty}-${this.gameState.category}`;
+        if (this.gameState.practiceMode.seenWordsByKey?.[key]) {
+          this.gameState.practiceMode.seenWordsByKey[key] = new Set();
+        }
+        // Retry with reset seen words
+        return this.selectRandomWord();
+      }
+      console.error("Cannot select word: filtered list is empty and cannot reset.");
+      return;
+    }
+    
     const randomIndex = Math.floor(Math.random() * filtered.length);
     this.gameState.currentWord = filtered[randomIndex];
+    
+    // Final safety check
+    if (!this.gameState.currentWord) {
+      console.error("Selected word is undefined. This should not happen.");
+      return;
+    }
 
     // Mark as seen in practice mode
     if (this.gameState.practiceMode?.enabled) {
