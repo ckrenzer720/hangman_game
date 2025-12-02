@@ -138,20 +138,25 @@ class HangmanGame {
         if (this.dataValidator) {
           const validation = this.dataValidator.validateWordList(cachedWords);
           if (!validation.valid && validation.errors.length > 0) {
-            console.warn('Cached word list validation failed, fetching fresh data');
+            console.warn(
+              "Cached word list validation failed, fetching fresh data"
+            );
             // Continue to fetch fresh data
           } else {
             if (validation.recovered) {
-              console.log('Cached word list was automatically recovered');
+              console.log("Cached word list was automatically recovered");
               this.cacheWords(cachedWords); // Save recovered version
             }
             this.wordLists = cachedWords;
             this.wordsLoaded = true;
             console.log("Words loaded from cache:", this.wordLists);
             this.init();
-            
+
             // If online, try to update cache in background
-            if (this.offlineManager && this.offlineManager.isCurrentlyOnline()) {
+            if (
+              this.offlineManager &&
+              this.offlineManager.isCurrentlyOnline()
+            ) {
               this.updateWordsInBackground();
             }
             return;
@@ -161,7 +166,7 @@ class HangmanGame {
           this.wordsLoaded = true;
           console.log("Words loaded from cache:", this.wordLists);
           this.init();
-          
+
           // If online, try to update cache in background
           if (this.offlineManager && this.offlineManager.isCurrentlyOnline()) {
             this.updateWordsInBackground();
@@ -206,16 +211,18 @@ class HangmanGame {
       if (this.dataValidator) {
         const validation = this.dataValidator.validateWordList(this.wordLists);
         if (!validation.valid) {
-          console.warn('Word list validation errors:', validation.errors);
+          console.warn("Word list validation errors:", validation.errors);
           if (validation.errors.length > 0 && this.strictMode !== false) {
-            throw new Error('Word list validation failed: ' + validation.errors.join(', '));
+            throw new Error(
+              "Word list validation failed: " + validation.errors.join(", ")
+            );
           }
         }
         if (validation.warnings.length > 0) {
-          console.warn('Word list validation warnings:', validation.warnings);
+          console.warn("Word list validation warnings:", validation.warnings);
         }
         if (validation.recovered) {
-          console.log('Word list was automatically recovered');
+          console.log("Word list was automatically recovered");
         }
       }
 
@@ -289,7 +296,7 @@ class HangmanGame {
   loadCachedWords() {
     // Use cache manager if available
     if (this.cacheManager && this.cacheManager.isStorageAvailable()) {
-      const cached = this.cacheManager.get('words');
+      const cached = this.cacheManager.get("words");
       if (cached) {
         return cached;
       }
@@ -310,8 +317,8 @@ class HangmanGame {
         ) {
           // Migrate to cache manager if available
           if (this.cacheManager) {
-            this.cacheManager.set('words', parsed, {
-              expiration: 24 * 60 * 60 * 1000
+            this.cacheManager.set("words", parsed, {
+              expiration: 24 * 60 * 60 * 1000,
             });
           }
           return parsed;
@@ -330,12 +337,12 @@ class HangmanGame {
   cacheWords(words) {
     // Use cache manager if available
     if (this.cacheManager && this.cacheManager.isStorageAvailable()) {
-      this.cacheManager.set('words', words, {
+      this.cacheManager.set("words", words, {
         expiration: 7 * 24 * 60 * 60 * 1000, // 7 days
-        metadata: { 
-          source: 'server',
-          cachedAt: Date.now()
-        }
+        metadata: {
+          source: "server",
+          cachedAt: Date.now(),
+        },
       });
       return;
     }
@@ -365,7 +372,7 @@ class HangmanGame {
         {},
         10000
       );
-      
+
       if (response.ok) {
         const words = await response.json();
         this.cacheWords(words);
@@ -482,7 +489,7 @@ class HangmanGame {
         seenWordsByKey: {},
       };
     }
-    
+
     // Check if words are loaded
     if (
       !this.wordsLoaded ||
@@ -497,11 +504,11 @@ class HangmanGame {
     if (!difficultyWords) {
       console.error(`Invalid difficulty: ${this.gameState.difficulty}`);
       // Try to find a valid difficulty
-      const validDifficulties = Object.keys(this.wordLists).filter(d => {
+      const validDifficulties = Object.keys(this.wordLists).filter((d) => {
         const diffWords = this.wordLists[d];
         return diffWords && Object.keys(diffWords).length > 0;
       });
-      
+
       if (validDifficulties.length > 0) {
         this.gameState.difficulty = validDifficulties[0];
         // Prevent infinite recursion by limiting retries
@@ -517,7 +524,7 @@ class HangmanGame {
       this._selectWordRetryCount = 0;
       return;
     }
-    
+
     // Reset retry count on successful difficulty lookup
     this._selectWordRetryCount = 0;
 
@@ -529,16 +536,21 @@ class HangmanGame {
       // Fallback to first available category
       const availableCategories = Object.keys(difficultyWords);
       if (availableCategories.length === 0) {
-        console.error("No categories available for difficulty:", this.gameState.difficulty);
+        console.error(
+          "No categories available for difficulty:",
+          this.gameState.difficulty
+        );
         // Try to fallback to a different difficulty
         const allDifficulties = Object.keys(this.wordLists);
-        const fallbackDifficulty = allDifficulties.find(d => {
+        const fallbackDifficulty = allDifficulties.find((d) => {
           const diffWords = this.wordLists[d];
           return diffWords && Object.keys(diffWords).length > 0;
         });
         if (fallbackDifficulty) {
           this.gameState.difficulty = fallbackDifficulty;
-          const fallbackCategories = Object.keys(this.wordLists[fallbackDifficulty]);
+          const fallbackCategories = Object.keys(
+            this.wordLists[fallbackDifficulty]
+          );
           if (fallbackCategories.length > 0) {
             this.gameState.category = fallbackCategories[0];
             return this.selectRandomWord();
@@ -571,7 +583,8 @@ class HangmanGame {
       this.gameState.practiceMode?.allowRepeats === false
     ) {
       const key = `${this.gameState.difficulty}-${this.gameState.category}`;
-      const seen = this.gameState.practiceMode.seenWordsByKey?.[key] || new Set();
+      const seen =
+        this.gameState.practiceMode.seenWordsByKey?.[key] || new Set();
       filtered = filtered.filter((w) => !seen.has(w));
       if (filtered.length === 0) {
         // Reset seen set if exhausted
@@ -585,9 +598,14 @@ class HangmanGame {
 
     // Safety check: ensure we have words to select from
     if (filtered.length === 0) {
-      console.error("No words available after filtering. Resetting filter and retrying.");
+      console.error(
+        "No words available after filtering. Resetting filter and retrying."
+      );
       // Reset seen words if in practice mode to allow retry
-      if (this.gameState.practiceMode?.enabled && this.gameState.practiceMode?.allowRepeats === false) {
+      if (
+        this.gameState.practiceMode?.enabled &&
+        this.gameState.practiceMode?.allowRepeats === false
+      ) {
         const key = `${this.gameState.difficulty}-${this.gameState.category}`;
         if (this.gameState.practiceMode.seenWordsByKey?.[key]) {
           this.gameState.practiceMode.seenWordsByKey[key] = new Set();
@@ -595,13 +613,15 @@ class HangmanGame {
         // Retry with reset seen words
         return this.selectRandomWord();
       }
-      console.error("Cannot select word: filtered list is empty and cannot reset.");
+      console.error(
+        "Cannot select word: filtered list is empty and cannot reset."
+      );
       return;
     }
-    
+
     const randomIndex = Math.floor(Math.random() * filtered.length);
     this.gameState.currentWord = filtered[randomIndex];
-    
+
     // Final safety check
     if (!this.gameState.currentWord) {
       console.error("Selected word is undefined. This should not happen.");
@@ -660,8 +680,12 @@ class HangmanGame {
       this.revealLetter(letter);
       // Play audio feedback for correct guess
       if (this.audioManager) {
-        const remaining = this.gameState.maxIncorrectGuesses - this.gameState.incorrectGuesses.length;
-        this.audioManager.playCorrectGuess(letter, { remainingGuesses: remaining });
+        const remaining =
+          this.gameState.maxIncorrectGuesses -
+          this.gameState.incorrectGuesses.length;
+        this.audioManager.playCorrectGuess(letter, {
+          remainingGuesses: remaining,
+        });
       }
       this.checkWinCondition();
       return true;
@@ -670,8 +694,12 @@ class HangmanGame {
       this.drawHangmanPart();
       // Play audio feedback for incorrect guess
       if (this.audioManager) {
-        const remaining = this.gameState.maxIncorrectGuesses - this.gameState.incorrectGuesses.length;
-        this.audioManager.playIncorrectGuess(letter, { remainingGuesses: remaining });
+        const remaining =
+          this.gameState.maxIncorrectGuesses -
+          this.gameState.incorrectGuesses.length;
+        this.audioManager.playIncorrectGuess(letter, {
+          remainingGuesses: remaining,
+        });
       }
       this.checkLoseCondition();
       return false;
@@ -744,7 +772,9 @@ class HangmanGame {
 
       // Announce win to screen readers and play audio
       if (this.accessibilityManager) {
-        this.accessibilityManager.announceGameState('won', { word: this.gameState.currentWord });
+        this.accessibilityManager.announceGameState("won", {
+          word: this.gameState.currentWord,
+        });
       }
       if (this.audioManager) {
         this.audioManager.playWin({ word: this.gameState.currentWord });
@@ -752,15 +782,19 @@ class HangmanGame {
 
       // Handle multiplayer scoring
       if (this.gameState.multiplayer.enabled) {
-        const currentPlayer = this.gameState.multiplayer.players[this.gameState.multiplayer.currentPlayerIndex];
+        const currentPlayer =
+          this.gameState.multiplayer.players[
+            this.gameState.multiplayer.currentPlayerIndex
+          ];
         const roundScore = this.calculateScore();
         currentPlayer.score += roundScore;
         currentPlayer.wins += 1;
-        
+
         // Check if multiplayer game should end after this round
         // We check BEFORE advancing to next player
-        const willEndAfterThisRound = this.shouldEndMultiplayerGameAfterAdvance();
-        
+        const willEndAfterThisRound =
+          this.shouldEndMultiplayerGameAfterAdvance();
+
         this.showGameOverModal("You Won!", this.gameState.currentWord);
 
         // Auto-advance to next player in multiplayer mode, or end game
@@ -778,7 +812,10 @@ class HangmanGame {
       this.showGameOverModal("You Won!", this.gameState.currentWord);
 
       // Auto-continue in practice endless mode
-      if (this.gameState.practiceMode?.enabled && this.gameState.practiceMode?.endless) {
+      if (
+        this.gameState.practiceMode?.enabled &&
+        this.gameState.practiceMode?.endless
+      ) {
         setTimeout(() => {
           this.hideGameOverModal();
           this.resetGame();
@@ -854,7 +891,9 @@ class HangmanGame {
 
       // Announce loss to screen readers and play audio
       if (this.accessibilityManager) {
-        this.accessibilityManager.announceGameState('lost', { word: this.gameState.currentWord });
+        this.accessibilityManager.announceGameState("lost", {
+          word: this.gameState.currentWord,
+        });
       }
       if (this.audioManager) {
         this.audioManager.playLose({ word: this.gameState.currentWord });
@@ -863,8 +902,9 @@ class HangmanGame {
       // Handle multiplayer - player lost this round
       if (this.gameState.multiplayer.enabled) {
         // Check if multiplayer game should end after this round
-        const willEndAfterThisRound = this.shouldEndMultiplayerGameAfterAdvance();
-        
+        const willEndAfterThisRound =
+          this.shouldEndMultiplayerGameAfterAdvance();
+
         this.showGameOverModal("Game Over!", this.gameState.currentWord);
 
         // Auto-advance to next player in multiplayer mode, or end game
@@ -882,7 +922,10 @@ class HangmanGame {
       this.showGameOverModal("Game Over!", this.gameState.currentWord);
 
       // Auto-continue in practice endless mode
-      if (this.gameState.practiceMode?.enabled && this.gameState.practiceMode?.endless) {
+      if (
+        this.gameState.practiceMode?.enabled &&
+        this.gameState.practiceMode?.endless
+      ) {
         setTimeout(() => {
           this.hideGameOverModal();
           this.resetGame();
@@ -959,13 +1002,17 @@ class HangmanGame {
       wordLengthFilter: existingPracticeMode?.wordLengthFilter ?? null,
       hintsUsed: existingPracticeMode?.hintsUsed ?? 0,
       scorePenaltyMultiplier: existingPracticeMode?.scorePenaltyMultiplier ?? 1,
-      seenWordsByKey: existingPracticeMode?.seenWordsByKey ? { ...existingPracticeMode.seenWordsByKey } : {},
+      seenWordsByKey: existingPracticeMode?.seenWordsByKey
+        ? { ...existingPracticeMode.seenWordsByKey }
+        : {},
     };
-    
+
     const existingMultiplayer = this.gameState?.multiplayer;
     const multiplayer = {
       enabled: existingMultiplayer?.enabled ?? false,
-      players: existingMultiplayer?.players ? [...existingMultiplayer.players] : [],
+      players: existingMultiplayer?.players
+        ? [...existingMultiplayer.players]
+        : [],
       currentPlayerIndex: existingMultiplayer?.currentPlayerIndex ?? 0,
       roundsPlayed: existingMultiplayer?.roundsPlayed ?? 0,
       totalRounds: existingMultiplayer?.totalRounds ?? null,
@@ -1135,17 +1182,17 @@ class HangmanGame {
     if (this.gameState.gameStatus === "playing" && !this.gameState.isPaused) {
       this.gameState.isPaused = true;
       this.gameState.gameStatus = "paused";
-      
+
       // Save progress when pausing
       if (this.progressManager) {
         this.progressManager.saveProgress(this.gameState, this);
       }
-      
+
       // Announce pause
       if (this.audioManager) {
-        this.audioManager.announceGameState('paused');
+        this.audioManager.announceGameState("paused");
       }
-      
+
       return true;
     }
     return false;
@@ -1155,12 +1202,12 @@ class HangmanGame {
     if (this.gameState.gameStatus === "paused" && this.gameState.isPaused) {
       this.gameState.isPaused = false;
       this.gameState.gameStatus = "playing";
-      
+
       // Announce resume
       if (this.audioManager) {
-        this.audioManager.announceGameState('resumed');
+        this.audioManager.announceGameState("resumed");
       }
-      
+
       return true;
     }
     return false;
@@ -1180,7 +1227,10 @@ class HangmanGame {
 
   updateDifficultyProgression() {
     // Disable progression in practice mode
-    if (!this.difficultyProgression.enabled || this.gameState.practiceMode?.enabled)
+    if (
+      !this.difficultyProgression.enabled ||
+      this.gameState.practiceMode?.enabled
+    )
       return;
 
     this.difficultyProgression.consecutiveWins++;
@@ -1263,7 +1313,9 @@ class HangmanGame {
 
     // Apply practice hint penalties
     if (this.gameState.practiceMode?.enabled) {
-      totalScore = Math.round(totalScore * this.gameState.practiceMode.scorePenaltyMultiplier);
+      totalScore = Math.round(
+        totalScore * this.gameState.practiceMode.scorePenaltyMultiplier
+      );
     }
     return Math.max(50, totalScore); // Minimum score of 50
   }
@@ -1479,20 +1531,23 @@ class HangmanGame {
   loadStatistics() {
     // Use cache manager if available
     if (this.cacheManager && this.cacheManager.isStorageAvailable()) {
-      const cached = this.cacheManager.get('statistics');
+      const cached = this.cacheManager.get("statistics");
       if (cached) {
         // Validate with data validator if available
         if (this.dataValidator) {
           const validation = this.dataValidator.validateStatistics(cached);
           if (validation.valid || validation.recovered) {
             if (validation.recovered && validation.fixes.length > 0) {
-              console.log('Statistics were automatically fixed:', validation.fixes);
+              console.log(
+                "Statistics were automatically fixed:",
+                validation.fixes
+              );
               // Save fixed statistics
-              this.cacheManager.set('statistics', cached);
+              this.cacheManager.set("statistics", cached);
             }
             return cached;
           } else {
-            console.warn('Statistics validation failed, using defaults');
+            console.warn("Statistics validation failed, using defaults");
           }
         } else if (this.validateStatisticsStructure(cached)) {
           return cached;
@@ -1510,26 +1565,29 @@ class HangmanGame {
         const savedStats = localStorage.getItem("hangmanStatistics");
         if (savedStats) {
           const parsed = JSON.parse(savedStats);
-          
+
           // Validate with data validator if available
           if (this.dataValidator) {
             const validation = this.dataValidator.validateStatistics(parsed);
             if (validation.valid || validation.recovered) {
               if (validation.recovered && validation.fixes.length > 0) {
-                console.log('Statistics were automatically fixed:', validation.fixes);
+                console.log(
+                  "Statistics were automatically fixed:",
+                  validation.fixes
+                );
               }
               // Migrate to cache manager if available
               if (this.cacheManager) {
-                this.cacheManager.set('statistics', parsed);
+                this.cacheManager.set("statistics", parsed);
               }
               return parsed;
             } else {
-              console.warn('Statistics validation failed:', validation.errors);
+              console.warn("Statistics validation failed:", validation.errors);
             }
           } else if (this.validateStatisticsStructure(parsed)) {
             // Migrate to cache manager if available
             if (this.cacheManager) {
-              this.cacheManager.set('statistics', parsed);
+              this.cacheManager.set("statistics", parsed);
             }
             return parsed;
           } else {
@@ -1657,24 +1715,24 @@ class HangmanGame {
   saveStatistics() {
     // Use cache manager if available
     if (this.cacheManager && this.cacheManager.isStorageAvailable()) {
-      const success = this.cacheManager.set('statistics', this.statistics, {
+      const success = this.cacheManager.set("statistics", this.statistics, {
         metadata: {
           lastSaved: Date.now(),
-          version: this.statistics.version || '1.0.0'
-        }
+          version: this.statistics.version || "1.0.0",
+        },
       });
-      
+
       if (success) {
         // Also save backup periodically (every 10th save)
         if (!this._statisticsSaveCount) {
           this._statisticsSaveCount = 0;
         }
         this._statisticsSaveCount++;
-        
+
         if (this._statisticsSaveCount % 10 === 0) {
-          this.cacheManager.set('statistics_backup', this.statistics, {
+          this.cacheManager.set("statistics_backup", this.statistics, {
             expiration: 30 * 24 * 60 * 60 * 1000, // 30 days
-            metadata: { isBackup: true }
+            metadata: { isBackup: true },
           });
         }
         return;
@@ -2170,7 +2228,8 @@ class HangmanGame {
 
     // Override max mistakes if provided
     if (this.gameState.practiceMode.maxMistakesOverride != null) {
-      this.gameState.maxIncorrectGuesses = this.gameState.practiceMode.maxMistakesOverride;
+      this.gameState.maxIncorrectGuesses =
+        this.gameState.practiceMode.maxMistakesOverride;
     }
   }
 
@@ -2249,7 +2308,7 @@ class HangmanGame {
 
   enableMultiplayerMode(playerNames, totalRounds = null) {
     this.gameState.multiplayer.enabled = true;
-    this.gameState.multiplayer.players = playerNames.map(name => ({
+    this.gameState.multiplayer.players = playerNames.map((name) => ({
       name: name.trim() || `Player ${playerNames.indexOf(name) + 1}`,
       score: 0,
       wins: 0,
@@ -2257,7 +2316,7 @@ class HangmanGame {
     this.gameState.multiplayer.currentPlayerIndex = 0;
     this.gameState.multiplayer.roundsPlayed = 0;
     this.gameState.multiplayer.totalRounds = totalRounds;
-    
+
     // Update UI to show multiplayer indicators
     if (window.ui && window.ui.showMultiplayerIndicator) {
       window.ui.showMultiplayerIndicator();
@@ -2269,7 +2328,7 @@ class HangmanGame {
     this.gameState.multiplayer.players = [];
     this.gameState.multiplayer.currentPlayerIndex = 0;
     this.gameState.multiplayer.roundsPlayed = 0;
-    
+
     // Hide multiplayer indicators
     if (window.ui && window.ui.hideMultiplayerIndicator) {
       window.ui.hideMultiplayerIndicator();
@@ -2277,24 +2336,30 @@ class HangmanGame {
   }
 
   getCurrentPlayer() {
-    if (!this.gameState.multiplayer.enabled || this.gameState.multiplayer.players.length === 0) {
+    if (
+      !this.gameState.multiplayer.enabled ||
+      this.gameState.multiplayer.players.length === 0
+    ) {
       return null;
     }
-    return this.gameState.multiplayer.players[this.gameState.multiplayer.currentPlayerIndex];
+    return this.gameState.multiplayer.players[
+      this.gameState.multiplayer.currentPlayerIndex
+    ];
   }
 
   advanceToNextPlayer() {
     if (!this.gameState.multiplayer.enabled) return;
 
     this.gameState.multiplayer.roundsPlayed += 1;
-    
+
     // Move to next player
-    this.gameState.multiplayer.currentPlayerIndex = 
-      (this.gameState.multiplayer.currentPlayerIndex + 1) % this.gameState.multiplayer.players.length;
-    
+    this.gameState.multiplayer.currentPlayerIndex =
+      (this.gameState.multiplayer.currentPlayerIndex + 1) %
+      this.gameState.multiplayer.players.length;
+
     // Reset game for next player
     this.resetGame();
-    
+
     // Update UI
     if (window.ui && window.ui.updateMultiplayerIndicator) {
       window.ui.updateMultiplayerIndicator();
@@ -2314,16 +2379,18 @@ class HangmanGame {
 
   shouldEndMultiplayerGameAfterAdvance() {
     if (!this.gameState.multiplayer.enabled) return false;
-    
+
     // Calculate what the roundsPlayed will be after advancing
     const nextRoundsPlayed = this.gameState.multiplayer.roundsPlayed + 1;
-    
+
     // If totalRounds is set, check if we've reached it
     if (this.gameState.multiplayer.totalRounds !== null) {
-      const roundsCompleted = Math.floor(nextRoundsPlayed / this.gameState.multiplayer.players.length);
+      const roundsCompleted = Math.floor(
+        nextRoundsPlayed / this.gameState.multiplayer.players.length
+      );
       return roundsCompleted >= this.gameState.multiplayer.totalRounds;
     }
-    
+
     // For unlimited play, don't auto-end (users can end manually)
     return false;
   }
@@ -2342,8 +2409,10 @@ class HangmanGame {
     });
 
     const winner = players[0];
-    const winners = players.filter(p => p.score === winner.score && p.wins === winner.wins);
-    
+    const winners = players.filter(
+      (p) => p.score === winner.score && p.wins === winner.wins
+    );
+
     // Show winner modal
     if (window.ui && window.ui.showMultiplayerWinner) {
       window.ui.showMultiplayerWinner(winners, players);
