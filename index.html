@@ -151,18 +151,29 @@
         </div>
 
         <div class="controls-section" role="toolbar" aria-label="Game controls">
-          <button class="btn" id="new-game" aria-label="Start a new game">New Game</button>
-          <button class="btn" id="pause-resume" aria-label="Pause the game">Pause</button>
-          <button class="btn" id="hint" aria-label="Get a hint for the current word">Hint</button>
-          <button class="btn" id="voice-input" aria-label="Voice input - say a letter to guess" style="display: none;">🎤 Voice</button>
-          <button class="btn" id="practice" aria-label="Open practice mode settings">Practice</button>
-          <button class="btn" id="multiplayer" aria-label="Start local multiplayer game">Multiplayer</button>
-          <button class="btn" id="challenge" aria-label="View challenges and tournaments">Challenge</button>
-          <button class="btn" id="help" aria-label="Open help and tutorial">Help</button>
-          <button class="btn" id="statistics" aria-label="View game statistics">Statistics</button>
-          <button class="btn" id="achievements" aria-label="View achievements">Achievements</button>
-          <button class="btn" id="settings" aria-label="Open settings">Settings</button>
-          <button class="btn" id="quit" aria-label="Quit current game">Quit</button>
+          <!-- Primary Game Actions -->
+          <div class="button-group button-group-primary" role="group" aria-label="Primary game actions">
+            <button class="btn btn-primary" id="new-game" aria-label="Start a new game">New Game</button>
+            <button class="btn btn-primary" id="pause-resume" aria-label="Pause the game">Pause</button>
+            <button class="btn btn-primary" id="hint" aria-label="Get a hint for the current word">Hint</button>
+            <button class="btn btn-primary" id="voice-input" aria-label="Voice input - say a letter to guess" style="display: none;">🎤 Voice</button>
+          </div>
+          
+          <!-- Game Modes -->
+          <div class="button-group button-group-modes" role="group" aria-label="Game modes">
+            <button class="btn" id="practice" aria-label="Open practice mode settings">Practice</button>
+            <button class="btn" id="multiplayer" aria-label="Start local multiplayer game">Multiplayer</button>
+            <button class="btn" id="challenge" aria-label="View challenges and tournaments">Challenge</button>
+          </div>
+          
+          <!-- Information & Settings -->
+          <div class="button-group button-group-info" role="group" aria-label="Information and settings">
+            <button class="btn" id="statistics" aria-label="View game statistics">Statistics</button>
+            <button class="btn" id="achievements" aria-label="View achievements">Achievements</button>
+            <button class="btn" id="help" aria-label="Open help and tutorial">Help</button>
+            <button class="btn" id="settings" aria-label="Open settings">Settings</button>
+            <button class="btn btn-secondary" id="quit" aria-label="Quit current game">Quit</button>
+          </div>
         </div>
       </main>
 

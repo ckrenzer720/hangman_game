@@ -379,8 +379,15 @@ class GameUI {
     if (!modal || !content) return;
 
     content.innerHTML = this.renderPracticeSettings();
-    modal.classList.add("show");
-    document.body.style.overflow = "hidden";
+    
+    // Use modal manager for consistent behavior
+    if (window.modalManager) {
+      window.modalManager.show("practice-modal", { closePrevious: true });
+    } else {
+      // Fallback
+      modal.classList.add("show");
+      document.body.style.overflow = "hidden";
+    }
   }
 
   hidePractice() {
@@ -491,8 +498,15 @@ class GameUI {
     if (!modal || !content) return;
 
     content.innerHTML = this.renderMultiplayerSetup();
-    modal.classList.add("show");
-    document.body.style.overflow = "hidden";
+    
+    // Use modal manager for consistent behavior
+    if (window.modalManager) {
+      window.modalManager.show("multiplayer-modal", { closePrevious: true });
+    } else {
+      // Fallback
+      modal.classList.add("show");
+      document.body.style.overflow = "hidden";
+    }
     
     // Add event listeners to dynamic elements
     const addPlayerBtn = document.getElementById("add-player-btn");
@@ -1708,7 +1722,7 @@ class GameUI {
   showStatistics() {
     this.populateStatisticsDashboard();
     if (window.modalManager) {
-      window.modalManager.show("statistics-modal");
+      window.modalManager.show("statistics-modal", { closePrevious: true });
     } else {
       // Fallback
       const modal = document.getElementById("statistics-modal");
@@ -2216,7 +2230,12 @@ class GameUI {
     const modal = document.getElementById("achievements-modal");
     if (modal) {
       this.populateAchievements();
-      modal.classList.add("show");
+      if (window.modalManager) {
+        window.modalManager.show("achievements-modal", { closePrevious: true });
+      } else {
+        // Fallback
+        modal.classList.add("show");
+      }
     }
   }
 
@@ -2709,9 +2728,14 @@ class GameUI {
       window.helpSystem.initialize();
     }
 
-    // Show modal
-    modal.classList.add("show");
-    document.body.style.overflow = "hidden";
+    // Use modal manager for consistent behavior
+    if (window.modalManager) {
+      window.modalManager.show("help-modal", { closePrevious: true });
+    } else {
+      // Fallback
+      modal.classList.add("show");
+      document.body.style.overflow = "hidden";
+    }
   }
 
   /**
@@ -3017,9 +3041,16 @@ class GameUI {
         return;
       }
     }
-
-    modal.classList.add("show");
-    document.body.style.overflow = "hidden";
+    
+    // Use modal manager for consistent behavior
+    if (window.modalManager) {
+      window.modalManager.show("challenge-modal", { closePrevious: true });
+    } else {
+      // Fallback
+      modal.classList.add("show");
+      document.body.style.overflow = "hidden";
+    }
+    
     this.populateChallengeModal();
   }
 

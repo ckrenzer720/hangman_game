@@ -282,12 +282,25 @@
     justify-content: center;
     overflow-x: auto;
     overflow-y: visible;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+  }
+
+  .button-group {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .button-group:not(:last-child)::after {
+    display: none; /* Hide separators on mobile */
   }
 
   .btn {
     min-width: 100px;
     flex: 0 0 auto;
     max-width: 150px;
+    font-size: 0.9rem;
+    padding: var(--spacing-sm) var(--spacing-md);
   }
 }
 

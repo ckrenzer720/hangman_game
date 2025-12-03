@@ -55,8 +55,19 @@ class ModalManager {
       lockBody: true,
       closeOnEscape: true,
       closeOnOverlay: false,
+      closePrevious: true, // Close previous modals by default
       ...options
     };
+
+    // Close previous modals if requested (prevents stacking)
+    if (config.closePrevious && this.openModals.size > 0) {
+      const previousModals = Array.from(this.openModals);
+      previousModals.forEach(prevModal => {
+        if (prevModal !== modal) {
+          this.hide(prevModal);
+        }
+      });
+    }
 
     // Add show class
     modal.classList.add('show');
