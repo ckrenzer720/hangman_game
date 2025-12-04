@@ -1544,12 +1544,16 @@ class GameUI {
 
   addLetterRevealAnimation(element) {
     if (element) {
+      // Ensure hardware acceleration
+      element.style.transform = 'translateZ(0)';
+      element.style.willChange = 'transform, opacity';
       element.classList.add("letter-reveal");
-      element.style.animation = "letterReveal 0.6s ease-out";
+      element.style.animation = "letterReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1)";
       setTimeout(() => {
         element.classList.remove("letter-reveal");
         element.style.animation = "";
-      }, 600);
+        element.style.willChange = "";
+      }, 400);
     }
   }
 
