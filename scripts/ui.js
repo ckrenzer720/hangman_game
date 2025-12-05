@@ -1420,12 +1420,21 @@ class GameUI {
         this.audioManager.playNotification(message);
       }
       
+      // Announce to screen readers
+      if (this.accessibilityManager) {
+        const priority = type === 'error' ? 'assertive' : 'polite';
+        this.accessibilityManager.announce(`${type === 'error' ? 'Error: ' : type === 'success' ? 'Success: ' : type === 'warning' ? 'Warning: ' : ''}${message}`, priority);
+      }
+      
       // Create or update feedback element
       let feedbackElement = document.getElementById("game-feedback");
       if (!feedbackElement) {
         feedbackElement = document.createElement("div");
         feedbackElement.id = "game-feedback";
         feedbackElement.className = "toast";
+        feedbackElement.setAttribute("role", type === 'error' ? 'alert' : 'status');
+        feedbackElement.setAttribute("aria-live", type === 'error' ? 'assertive' : 'polite');
+        feedbackElement.setAttribute("aria-atomic", "true");
         document.body.appendChild(feedbackElement);
       }
 

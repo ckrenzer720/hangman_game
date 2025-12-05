@@ -243,6 +243,10 @@ document.addEventListener("DOMContentLoaded", async function () {
           touchAccessibilityManager.ui = uiInstance;
           uiInstance.touchAccessibilityManager = touchAccessibilityManager;
         }
+        // Initialize accessibility enhancements if available
+        if (typeof AccessibilityEnhancements !== 'undefined' && accessibilityManager) {
+          window.accessibilityEnhancements = new AccessibilityEnhancements(accessibilityManager);
+        }
         return uiInstance;
       },
       "ui_initialization",

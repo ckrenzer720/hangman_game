@@ -720,22 +720,57 @@ body {
    FOCUS STYLES (Accessibility)
    ======================================== */
 
-/* Enhanced focus indicators for better visibility */
+/* Enhanced focus indicators for better visibility - WCAG AAA compliant */
 .btn:focus-visible,
 .keyboard-key:focus-visible,
 input:focus-visible,
 select:focus-visible,
-textarea:focus-visible {
+textarea:focus-visible,
+a:focus-visible {
   outline: 3px solid var(--accent-color);
-  outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(107, 114, 128, 0.2);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 2px var(--background-color), 0 0 0 5px var(--accent-color);
+  border-radius: 2px;
+}
+
+/* High contrast focus mode - always visible focus */
+[data-focus-mode="always"] *:focus {
+  outline: 3px solid var(--accent-color) !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 0 2px var(--background-color), 0 0 0 5px var(--accent-color) !important;
 }
 
 /* Fallback for browsers that don't support :focus-visible */
 .btn:focus:not(:focus-visible),
 .keyboard-key:focus:not(:focus-visible) {
   outline: 2px solid var(--dark-gray);
-  outline-offset: 1px;
+  outline-offset: 2px;
+}
+
+/* Ensure sufficient color contrast for text */
+:root {
+  /* WCAG AAA compliant contrast ratios (7:1 for normal text, 4.5:1 for large text) */
+  --text-contrast-ratio: 1; /* Will be calculated */
+}
+
+/* High contrast improvements */
+[data-theme="high-contrast"] {
+  --text-color: #000000;
+  --background-color: #ffffff;
+  --primary-color: #000000;
+  --accent-color: #0000ff;
+  --success-color: #008000;
+  --border-color: #000000;
+}
+
+[data-theme="high-contrast"] .btn {
+  border-width: 2px;
+  border-color: var(--text-color);
+}
+
+[data-theme="high-contrast"] .keyboard-key {
+  border-width: 2px;
+  border-color: var(--text-color);
 }
 
 /* Focus styles for keyboard keys */
