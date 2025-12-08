@@ -47,12 +47,11 @@
   border-radius: 2px;
 }
 
-/* Rope */
+/* Rope - hangs from right end of beam */
 .hangman-figure .rope {
   position: absolute;
   top: 28px;
-  right: 50%;
-  transform: translateX(50%);
+  left: calc(50% + 50px - 2px); /* Right end of beam (50% + 50px) minus half rope width (2px) */
   width: 4px;
   height: 30px;
   background: #d2b48c;
@@ -60,12 +59,11 @@
   z-index: 5;
 }
 
-/* Head */
+/* Head - centered below rope */
 .hangman-figure .head {
   position: absolute;
   top: 58px;
-  right: 50%;
-  transform: translateX(50%);
+  left: calc(50% + 50px - 20px); /* Same horizontal position as rope, minus half head width (20px) */
   width: 40px;
   height: 40px;
   border: 4px solid #000000;
@@ -74,12 +72,11 @@
   z-index: 10;
 }
 
-/* Body */
+/* Body - centered on head */
 .hangman-figure .body {
   position: absolute;
   top: 98px;
-  right: 50%;
-  transform: translateX(50%);
+  left: calc(50% + 50px - 2px); /* Same horizontal position as rope/head center, minus half body width (2px) */
   width: 4px;
   height: 80px;
   background: #000000;
@@ -91,8 +88,8 @@
 .hangman-figure .left-arm {
   position: absolute;
   top: 110px;
-  right: 50%;
-  transform: translateX(50%) rotate(-30deg);
+  left: calc(50% + 50px - 2px); /* Start from body center */
+  transform: rotate(-30deg);
   width: 4px;
   height: 50px;
   background: #000000;
@@ -105,8 +102,8 @@
 .hangman-figure .right-arm {
   position: absolute;
   top: 110px;
-  right: 50%;
-  transform: translateX(50%) rotate(30deg);
+  left: calc(50% + 50px - 2px); /* Start from body center */
+  transform: rotate(30deg);
   width: 4px;
   height: 50px;
   background: #000000;
@@ -119,8 +116,8 @@
 .hangman-figure .left-leg {
   position: absolute;
   top: 178px;
-  right: 50%;
-  transform: translateX(50%) rotate(-20deg);
+  left: calc(50% + 50px - 2px); /* Start from body center */
+  transform: rotate(-20deg);
   width: 4px;
   height: 50px;
   background: #000000;
@@ -133,8 +130,8 @@
 .hangman-figure .right-leg {
   position: absolute;
   top: 178px;
-  right: 50%;
-  transform: translateX(50%) rotate(20deg);
+  left: calc(50% + 50px - 2px); /* Start from body center */
+  transform: rotate(20deg);
   width: 4px;
   height: 50px;
   background: #000000;

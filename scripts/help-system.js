@@ -277,30 +277,6 @@ class HelpSystem {
                   Open help (alternative shortcut)
                 </div>
               </div>
-              <div class="shortcut-item">
-                <div class="shortcut-keys">
-                  <kbd>N</kbd>
-                </div>
-                <div class="shortcut-description">
-                  Start a new game
-                </div>
-              </div>
-              <div class="shortcut-item">
-                <div class="shortcut-keys">
-                  <kbd>S</kbd>
-                </div>
-                <div class="shortcut-description">
-                  Open statistics
-                </div>
-              </div>
-              <div class="shortcut-item">
-                <div class="shortcut-keys">
-                  <kbd>?</kbd> or <kbd>F1</kbd>
-                </div>
-                <div class="shortcut-description">
-                  Open help
-                </div>
-              </div>
             </div>
           </div>
 

@@ -1020,9 +1020,8 @@ class GameUI {
       const focusedKey = document.activeElement;
       if (focusedKey && focusedKey.classList.contains("keyboard-key") && !focusedKey.disabled) {
         this.handleLetterClick(focusedKey);
-      } else {
-        this.startNewGame();
       }
+      // Removed: Enter no longer starts new game
     }
 
     if (key.toLowerCase() === "h" && !isModifierPressed) {
@@ -1030,25 +1029,7 @@ class GameUI {
       this.game.getHint();
     }
 
-    // Keyboard shortcuts
-    if (key.toLowerCase() === "n" && !isModifierPressed) {
-      event.preventDefault();
-      this.startNewGame();
-    }
-
-    if (key.toLowerCase() === "s" && !isModifierPressed) {
-      event.preventDefault();
-      if (document.getElementById("statistics")) {
-        this.showStatistics();
-      }
-    }
-
-    if (key.toLowerCase() === "?" || (key === "F1" && !isModifierPressed)) {
-      event.preventDefault();
-      if (document.getElementById("help")) {
-        this.showHelp();
-      }
-    }
+    // Keyboard shortcuts removed: N (new game), S (statistics), ?/F1 (help)
   }
 
   /**
