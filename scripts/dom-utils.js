@@ -5,34 +5,122 @@
 /**
  * DOMUtils - Centralized DOM manipulation utilities
  * Consolidates repetitive DOM operations across the codebase
+ * Includes caching for frequently accessed elements
  */
 class DOMUtils {
+  // Cache for frequently accessed elements
+  static _elementCache = new Map();
+  static _cacheEnabled = true;
+  static _maxCacheSize = 100;
+
   /**
-   * Get element by ID with optional error handling
+   * Clear the element cache (useful when DOM changes significantly)
+   */
+  static clearCache() {
+    this._elementCache.clear();
+  }
+
+  /**
+   * Enable or disable caching
+   * @param {boolean} enabled - Whether to enable caching
+   */
+  static setCacheEnabled(enabled) {
+    this._cacheEnabled = enabled;
+    if (!enabled) {
+      this.clearCache();
+    }
+  }
+
+  /**
+   * Get cache key for selector
+   * @private
+   */
+  static _getCacheKey(selector, context) {
+    const contextId = context === document ? 'doc' : (context.id || context.className || 'ctx');
+    return `${contextId}:${selector}`;
+  }
+
+  /**
+   * Get element by ID with optional error handling and caching
    * @param {string} id - Element ID
    * @param {boolean} throwError - Whether to throw error if not found
+   * @param {boolean} useCache - Whether to use cache (default: true)
    * @returns {HTMLElement|null}
    */
-  static getElementById(id, throwError = false) {
+  static getElementById(id, throwError = false, useCache = true) {
+    const cacheKey = `id:${id}`;
+    
+    if (this._cacheEnabled && useCache && this._elementCache.has(cacheKey)) {
+      const cached = this._elementCache.get(cacheKey);
+      // Verify element still exists in DOM
+      if (cached && document.contains(cached)) {
+        return cached;
+      } else {
+        // Element was removed, clear from cache
+        this._elementCache.delete(cacheKey);
+      }
+    }
+
     const element = document.getElementById(id);
+    
     if (!element && throwError) {
       throw new Error(`Element with ID "${id}" not found`);
     }
+
+    // Cache the element if found and caching is enabled
+    if (element && this._cacheEnabled && useCache) {
+      // Limit cache size
+      if (this._elementCache.size >= this._maxCacheSize) {
+        // Remove oldest entry (simple FIFO)
+        const firstKey = this._elementCache.keys().next().value;
+        this._elementCache.delete(firstKey);
+      }
+      this._elementCache.set(cacheKey, element);
+    }
+
     return element;
   }
 
   /**
-   * Query selector with optional error handling
+   * Query selector with optional error handling and caching
    * @param {string} selector - CSS selector
    * @param {HTMLElement} context - Context element (default: document)
+   * @param {boolean} useCache - Whether to use cache (default: true for ID selectors)
    * @returns {HTMLElement|null}
    */
-  static querySelector(selector, context = document) {
-    return context.querySelector(selector);
+  static querySelector(selector, context = document, useCache = null) {
+    // Auto-detect if we should cache (ID selectors are safe to cache)
+    const shouldCache = useCache !== null ? useCache : (this._cacheEnabled && selector.startsWith('#'));
+    const cacheKey = this._getCacheKey(selector, context);
+    
+    if (shouldCache && this._elementCache.has(cacheKey)) {
+      const cached = this._elementCache.get(cacheKey);
+      // Verify element still exists in DOM
+      if (cached && (context === document ? document.contains(cached) : context.contains(cached))) {
+        return cached;
+      } else {
+        // Element was removed, clear from cache
+        this._elementCache.delete(cacheKey);
+      }
+    }
+
+    const element = context.querySelector(selector);
+
+    // Cache the element if found and caching is enabled (only for ID selectors by default)
+    if (element && shouldCache) {
+      // Limit cache size
+      if (this._elementCache.size >= this._maxCacheSize) {
+        const firstKey = this._elementCache.keys().next().value;
+        this._elementCache.delete(firstKey);
+      }
+      this._elementCache.set(cacheKey, element);
+    }
+
+    return element;
   }
 
   /**
-   * Query selector all
+   * Query selector all (not cached as results can change)
    * @param {string} selector - CSS selector
    * @param {HTMLElement} context - Context element (default: document)
    * @returns {NodeList}

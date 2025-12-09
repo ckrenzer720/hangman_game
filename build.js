@@ -17,6 +17,16 @@ try {
   minify = null;
 }
 
+// Try to load cssnano for CSS minification
+let cssnano;
+try {
+  cssnano = require('cssnano');
+} catch (error) {
+  console.warn('⚠️  cssnano not found. Install it with: npm install --save-dev cssnano postcss');
+  console.warn('   Building CSS without minification...\n');
+  cssnano = null;
+}
+
 const SCRIPTS_DIR = path.join(__dirname, 'scripts');
 const BUILD_DIR = path.join(__dirname, 'dist');
 const ANALYZE = process.argv.includes('--analyze');
@@ -121,31 +131,124 @@ async function minifyFile(filePath) {
 }
 
 /**
+ * Minify a CSS file
+ */
+async function minifyCSS(filePath) {
+  const content = fs.readFileSync(filePath, 'utf8');
+  const relativePath = path.relative(path.join(__dirname, 'styles'), filePath);
+  const outputPath = path.join(BUILD_DIR, 'styles', relativePath);
+  
+  // Ensure output directory exists
+  const outputDir = path.dirname(outputPath);
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+  
+  try {
+    // If cssnano is not available, just copy the file
+    if (!cssnano) {
+      fs.writeFileSync(outputPath, content);
+      return {
+        success: true,
+        file: relativePath,
+        originalSize: content.length,
+        minifiedSize: content.length,
+        savings: 0,
+      };
+    }
+    
+    // Use PostCSS with cssnano for minification
+    let postcss;
+    try {
+      postcss = require('postcss');
+    } catch (error) {
+      // PostCSS not available, just copy file
+      fs.writeFileSync(outputPath, content);
+      return {
+        success: true,
+        file: relativePath,
+        originalSize: content.length,
+        minifiedSize: content.length,
+        savings: 0,
+      };
+    }
+    
+    const result = await postcss([cssnano({ preset: 'default' })]).process(content, {
+      from: filePath,
+      to: outputPath,
+    });
+    
+    fs.writeFileSync(outputPath, result.css);
+    
+    const originalSize = content.length;
+    const minifiedSize = result.css.length;
+    const savings = ((1 - minifiedSize / originalSize) * 100).toFixed(2);
+    
+    return {
+      success: true,
+      file: relativePath,
+      originalSize,
+      minifiedSize,
+      savings: parseFloat(savings),
+    };
+  } catch (error) {
+    console.error(`Error minifying CSS ${relativePath}:`, error);
+    // Copy original file if minification fails
+    fs.writeFileSync(outputPath, content);
+    return {
+      success: false,
+      file: relativePath,
+      originalSize: content.length,
+      minifiedSize: content.length,
+      savings: 0,
+    };
+  }
+}
+
+/**
  * Copy non-JS files to build directory
  */
-function copyNonJSFiles() {
+async function copyNonJSFiles() {
   const filesToCopy = [
     { src: 'index.html', dest: 'index.html' },
     { src: 'data/words.json', dest: 'data/words.json' },
   ];
   
-  // Copy styles directory
+  // Process styles directory with minification
   const stylesDir = path.join(__dirname, 'styles');
+  const cssResults = [];
+  let cssTotalOriginal = 0;
+  let cssTotalMinified = 0;
+  
   if (fs.existsSync(stylesDir)) {
     const stylesBuildDir = path.join(BUILD_DIR, 'styles');
     if (!fs.existsSync(stylesBuildDir)) {
       fs.mkdirSync(stylesBuildDir, { recursive: true });
     }
     
-    const styleFiles = fs.readdirSync(stylesDir);
+    const styleFiles = fs.readdirSync(stylesDir).filter(file => file.endsWith('.css'));
+    console.log(`\nProcessing ${styleFiles.length} CSS files...\n`);
+    
     for (const file of styleFiles) {
-      if (file.endsWith('.css')) {
-        const src = path.join(stylesDir, file);
-        const dest = path.join(stylesBuildDir, file);
-        fs.copyFileSync(src, dest);
+      const src = path.join(stylesDir, file);
+      const result = await minifyCSS(src);
+      cssResults.push(result);
+      
+      if (result.success) {
+        cssTotalOriginal += result.originalSize;
+        cssTotalMinified += result.minifiedSize;
+        
+        if (ANALYZE) {
+          console.log(`CSS: ${result.file}:`);
+          console.log(`  Original: ${(result.originalSize / 1024).toFixed(2)} KB`);
+          console.log(`  Minified: ${(result.minifiedSize / 1024).toFixed(2)} KB`);
+          console.log(`  Savings: ${result.savings}%\n`);
+        }
       }
     }
   }
+  
+  return { cssResults, cssTotalOriginal, cssTotalMinified };
   
   for (const { src, dest } of filesToCopy) {
     const srcPath = path.join(__dirname, src);
@@ -191,26 +294,52 @@ async function build() {
     }
   }
   
-  // Copy non-JS files
-  copyNonJSFiles();
+  // Copy and minify non-JS files (including CSS)
+  const { cssResults, cssTotalOriginal, cssTotalMinified } = await copyNonJSFiles();
   
   // Print summary
-  const totalSavings = ((1 - totalMinified / totalOriginal) * 100).toFixed(2);
+  const jsTotalSavings = totalOriginal > 0 ? ((1 - totalMinified / totalOriginal) * 100).toFixed(2) : 0;
+  const cssTotalSavings = cssTotalOriginal > 0 ? ((1 - cssTotalMinified / cssTotalOriginal) * 100).toFixed(2) : 0;
+  const totalOriginalSize = totalOriginal + cssTotalOriginal;
+  const totalMinifiedSize = totalMinified + cssTotalMinified;
+  const overallSavings = totalOriginalSize > 0 ? ((1 - totalMinifiedSize / totalOriginalSize) * 100).toFixed(2) : 0;
+  
   console.log('✅ Build complete!\n');
   console.log('Summary:');
-  console.log(`  Total files: ${jsFiles.length}`);
-  console.log(`  Original size: ${(totalOriginal / 1024).toFixed(2)} KB`);
-  console.log(`  Minified size: ${(totalMinified / 1024).toFixed(2)} KB`);
-  console.log(`  Total savings: ${totalSavings}%`);
+  console.log(`  JavaScript files: ${jsFiles.length}`);
+  console.log(`    Original: ${(totalOriginal / 1024).toFixed(2)} KB`);
+  console.log(`    Minified: ${(totalMinified / 1024).toFixed(2)} KB`);
+  console.log(`    Savings: ${jsTotalSavings}%`);
+  console.log(`  CSS files: ${cssResults.length}`);
+  console.log(`    Original: ${(cssTotalOriginal / 1024).toFixed(2)} KB`);
+  console.log(`    Minified: ${(cssTotalMinified / 1024).toFixed(2)} KB`);
+  console.log(`    Savings: ${cssTotalSavings}%`);
+  console.log(`  Overall:`);
+  console.log(`    Total original: ${(totalOriginalSize / 1024).toFixed(2)} KB`);
+  console.log(`    Total minified: ${(totalMinifiedSize / 1024).toFixed(2)} KB`);
+  console.log(`    Overall savings: ${overallSavings}%`);
   console.log(`\n📦 Build output: ${BUILD_DIR}`);
   
   // Write build info
   const buildInfo = {
     timestamp: new Date().toISOString(),
-    files: results.length,
-    totalOriginalSize: totalOriginal,
-    totalMinifiedSize: totalMinified,
-    savings: parseFloat(totalSavings),
+    javascript: {
+      files: results.length,
+      originalSize: totalOriginal,
+      minifiedSize: totalMinified,
+      savings: parseFloat(jsTotalSavings),
+    },
+    css: {
+      files: cssResults.length,
+      originalSize: cssTotalOriginal,
+      minifiedSize: cssTotalMinified,
+      savings: parseFloat(cssTotalSavings),
+    },
+    overall: {
+      originalSize: totalOriginalSize,
+      minifiedSize: totalMinifiedSize,
+      savings: parseFloat(overallSavings),
+    },
   };
   
   fs.writeFileSync(
