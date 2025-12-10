@@ -58,35 +58,46 @@ class GameUI {
   }
 
   bindEvents() {
-    // New Game Button
-    const newGameBtn = document.getElementById("new-game");
-    if (newGameBtn) {
-      newGameBtn.addEventListener("click", () => {
+    // Use event delegation for better performance - single listener for all buttons
+    const controlsSection = document.querySelector('.controls-section');
+    if (controlsSection) {
+      controlsSection.addEventListener('click', (e) => {
+        const target = e.target.closest('button');
+        if (!target) return;
+        
+        const id = target.id;
         this.playButtonSound();
-        this.startNewGame();
+        
+        // Button action map for event delegation
+        const buttonActions = {
+          'new-game': () => this.startNewGame(),
+          'hint': () => this.game.getHint(),
+          'help': () => this.showHelp(),
+          'challenge': () => this.showChallenge(),
+          'pause-resume': () => this.togglePause(),
+          'practice': () => this.showPractice(),
+          'multiplayer': () => this.showMultiplayer(),
+          'quit': () => this.quitGame(),
+          'statistics': () => this.showStatistics(),
+          'achievements': () => this.showAchievements(),
+          'settings': () => this.showSettings(),
+        };
+        
+        if (buttonActions[id]) {
+          buttonActions[id]();
+        }
       });
     }
 
-    // Hint Button
-    const hintBtn = document.getElementById("hint");
-    if (hintBtn) {
-      hintBtn.addEventListener("click", () => {
-        this.playButtonSound();
-        this.game.getHint();
-      });
-    }
-
-    // Voice Input Button
+    // Voice Input Button (special handling)
     const voiceInputBtn = document.getElementById("voice-input");
     if (voiceInputBtn) {
-      // Show button only if voice input is available
       if (this.touchAccessibilityManager && this.touchAccessibilityManager.recognition) {
         voiceInputBtn.style.display = "";
         voiceInputBtn.addEventListener("click", () => {
           this.playButtonSound();
           if (this.touchAccessibilityManager) {
             this.touchAccessibilityManager.toggleVoiceInput();
-            // Update button text
             if (this.touchAccessibilityManager.isListening) {
               voiceInputBtn.textContent = "🎤 Stop";
               voiceInputBtn.setAttribute("aria-label", "Stop voice input");
@@ -99,226 +110,91 @@ class GameUI {
       }
     }
 
-    // Help Button
-    const helpBtn = document.getElementById("help");
-    if (helpBtn) {
-      helpBtn.addEventListener("click", () => {
-        this.playButtonSound();
-        this.showHelp();
-      });
-    }
-
-    // Challenge Button
-    const challengeBtn = document.getElementById("challenge");
-    if (challengeBtn) {
-      challengeBtn.addEventListener("click", () => {
-        this.playButtonSound();
-        this.showChallenge();
-      });
-    }
-
-    // Pause/Resume Button
-    const pauseResumeBtn = document.getElementById("pause-resume");
-    if (pauseResumeBtn) {
-      pauseResumeBtn.addEventListener("click", () => {
-        this.playButtonSound();
-        this.togglePause();
-      });
-    }
-
-    // Practice Button
-    const practiceBtn = document.getElementById("practice");
-    if (practiceBtn) {
-      practiceBtn.addEventListener("click", () => {
-        this.playButtonSound();
-        this.showPractice();
-      });
-    }
-
-    // Multiplayer Button
-    const multiplayerBtn = document.getElementById("multiplayer");
-    if (multiplayerBtn) {
-      multiplayerBtn.addEventListener("click", () => {
-        this.playButtonSound();
-        this.showMultiplayer();
-      });
-    }
-
-    // Quit Button
-    const quitBtn = document.getElementById("quit");
-    if (quitBtn) {
-      quitBtn.addEventListener("click", () => {
-        this.playButtonSound();
-        this.quitGame();
-      });
-    }
-
-    // Play Again Button (in modal)
-    const playAgainBtn = document.getElementById("play-again");
-    if (playAgainBtn) {
-      playAgainBtn.addEventListener("click", () => {
+    // Event delegation for modal buttons
+    document.addEventListener('click', (e) => {
+      const target = e.target;
+      const id = target.id;
+      
+      // Modal action buttons
+      if (id === 'play-again') {
         this.playButtonSound();
         this.startNewGame();
-      });
-    }
+      } else if (id === 'share-result') {
+        this.shareGameResult();
+      } else if (id === 'share-achievements') {
+        this.shareAchievements();
+      } else if (id === 'share-multiplayer-result') {
+        this.shareMultiplayerResult();
+      } else if (id === 'resume-game') {
+        this.resumeGame();
+      } else if (id === 'close-statistics' || id === 'close-statistics-2') {
+        this.hideStatistics();
+      } else if (id === 'reset-statistics') {
+        this.resetStatistics();
+      } else if (id === 'close-achievements') {
+        this.hideAchievements();
+      } else if (id === 'close-settings') {
+        this.hideSettings();
+      } else if (id === 'reset-settings') {
+        this.resetSettings();
+      } else if (id === 'backup-data') {
+        this.backupData();
+      } else if (id === 'restore-data') {
+        this.restoreData();
+      } else if (id === 'close-help') {
+        this.hideHelp();
+      } else if (id === 'close-challenge') {
+        this.hideChallenge();
+      } else if (id === 'close-share') {
+        this.hideShareModal();
+      } else if (id === 'close-practice') {
+        this.hidePractice();
+      } else if (id === 'start-practice') {
+        this.startPractice();
+      } else if (id === 'close-multiplayer') {
+        this.hideMultiplayer();
+      } else if (id === 'multiplayer-play-again') {
+        this.startNewMultiplayerGame();
+      } else if (id === 'multiplayer-end-game') {
+        this.endMultiplayerGame();
+      }
+      
+      // Modal background clicks - use event delegation
+      if (target.classList.contains('game-over-modal') || 
+          target.classList.contains('statistics-modal') ||
+          target.classList.contains('settings-modal') ||
+          target.classList.contains('help-modal') ||
+          target.classList.contains('share-modal') ||
+          target.classList.contains('practice-modal') ||
+          target.classList.contains('multiplayer-modal') ||
+          target.classList.contains('challenge-modal')) {
+        if (e.target === target) {
+          if (target.id === 'game-over-modal') {
+            this.game.hideGameOverModal();
+          } else if (target.id === 'statistics-modal') {
+            this.hideStatistics();
+          } else if (target.id === 'settings-modal') {
+            this.hideSettings();
+          } else if (target.id === 'help-modal') {
+            this.hideHelp();
+          } else if (target.id === 'share-modal') {
+            this.hideShareModal();
+          } else if (target.id === 'practice-modal') {
+            this.hidePractice();
+          } else if (target.id === 'multiplayer-modal') {
+            this.hideMultiplayer();
+          } else if (target.id === 'challenge-modal') {
+            this.hideChallenge();
+          }
+        }
+      }
+    });
 
-    // Share Result Button
-    const shareResultBtn = document.getElementById("share-result");
-    if (shareResultBtn) {
-      shareResultBtn.addEventListener("click", () => this.shareGameResult());
-    }
-
-    // Share Achievements Button
-    const shareAchievementsBtn = document.getElementById("share-achievements");
-    if (shareAchievementsBtn) {
-      shareAchievementsBtn.addEventListener("click", () => this.shareAchievements());
-    }
-
-    // Share Multiplayer Result Button
-    const shareMultiplayerBtn = document.getElementById("share-multiplayer-result");
-    if (shareMultiplayerBtn) {
-      shareMultiplayerBtn.addEventListener("click", () => this.shareMultiplayerResult());
-    }
-
-    // Share modal handlers
-    const closeShareBtn = document.getElementById("close-share");
-    if (closeShareBtn) {
-      closeShareBtn.addEventListener("click", () => this.hideShareModal());
-    }
-    const shareModal = document.getElementById("share-modal");
-    if (shareModal) {
-      shareModal.addEventListener("click", (e) => {
-        if (e.target === shareModal) this.hideShareModal();
-      });
-    }
-
-    // Resume Button (in pause overlay)
-    const resumeBtn = document.getElementById("resume-game");
-    if (resumeBtn) {
-      resumeBtn.addEventListener("click", () => this.resumeGame());
-    }
-
-    // Statistics Button
-    const statisticsBtn = document.getElementById("statistics");
-    if (statisticsBtn) {
-      statisticsBtn.addEventListener("click", () => this.showStatistics());
-    }
-
-    // Close Statistics Buttons
-    const closeStatsBtn = document.getElementById("close-statistics");
-    if (closeStatsBtn) {
-      closeStatsBtn.addEventListener("click", () => this.hideStatistics());
-    }
-
-    const closeStatsBtn2 = document.getElementById("close-statistics-2");
-    if (closeStatsBtn2) {
-      closeStatsBtn2.addEventListener("click", () => this.hideStatistics());
-    }
-
-    // Reset Statistics Button
-    const resetStatsBtn = document.getElementById("reset-statistics");
-    if (resetStatsBtn) {
-      resetStatsBtn.addEventListener("click", () => this.resetStatistics());
-    }
-
-    // Achievements Button
-    const achievementsBtn = document.getElementById("achievements");
-    if (achievementsBtn) {
-      achievementsBtn.addEventListener("click", () => this.showAchievements());
-    }
-
-    // Close Achievements Button
-    const closeAchievementsBtn = document.getElementById("close-achievements");
-    if (closeAchievementsBtn) {
-      closeAchievementsBtn.addEventListener("click", () =>
-        this.hideAchievements()
-      );
-    }
-
-    // Settings Button
-    const settingsBtn = document.getElementById("settings");
-    if (settingsBtn) {
-      settingsBtn.addEventListener("click", () => this.showSettings());
-    }
-
-    // Close Settings Button
-    const closeSettingsBtn = document.getElementById("close-settings");
-    if (closeSettingsBtn) {
-      closeSettingsBtn.addEventListener("click", () => this.hideSettings());
-    }
-
-    // Reset Settings Button
-    const resetSettingsBtn = document.getElementById("reset-settings");
-    if (resetSettingsBtn) {
-      resetSettingsBtn.addEventListener("click", () => this.resetSettings());
-    }
-
-    // Backup Data Button
-    const backupDataBtn = document.getElementById("backup-data");
-    if (backupDataBtn) {
-      backupDataBtn.addEventListener("click", () => this.backupData());
-    }
-
-    // Restore Data Button
-    const restoreDataBtn = document.getElementById("restore-data");
-    if (restoreDataBtn) {
-      restoreDataBtn.addEventListener("click", () => this.restoreData());
-    }
-
-    // Help Button handlers
-    const closeHelpBtn = document.getElementById("close-help");
-    if (closeHelpBtn) {
-      closeHelpBtn.addEventListener("click", () => this.hideHelp());
-    }
-
-    // Challenge Button handlers
-    const closeChallengeBtn = document.getElementById("close-challenge");
-    if (closeChallengeBtn) {
-      closeChallengeBtn.addEventListener("click", () => this.hideChallenge());
-    }
-
-    // Practice modal handlers
-    const closePracticeBtn = document.getElementById("close-practice");
-    if (closePracticeBtn) {
-      closePracticeBtn.addEventListener("click", () => this.hidePractice());
-    }
-    const practiceModal = document.getElementById("practice-modal");
-    if (practiceModal) {
-      practiceModal.addEventListener("click", (e) => {
-        if (e.target === practiceModal) this.hidePractice();
-      });
-    }
-    const startPracticeBtn = document.getElementById("start-practice");
-    if (startPracticeBtn) {
-      startPracticeBtn.addEventListener("click", () => this.startPractice());
-    }
-
-    // Multiplayer modal handlers
-    const closeMultiplayerBtn = document.getElementById("close-multiplayer");
-    if (closeMultiplayerBtn) {
-      closeMultiplayerBtn.addEventListener("click", () => this.hideMultiplayer());
-    }
-    const multiplayerModal = document.getElementById("multiplayer-modal");
-    if (multiplayerModal) {
-      multiplayerModal.addEventListener("click", (e) => {
-        if (e.target === multiplayerModal) this.hideMultiplayer();
-      });
-    }
-    const multiplayerPlayAgainBtn = document.getElementById("multiplayer-play-again");
-    if (multiplayerPlayAgainBtn) {
-      multiplayerPlayAgainBtn.addEventListener("click", () => this.startNewMultiplayerGame());
-    }
-    const multiplayerEndGameBtn = document.getElementById("multiplayer-end-game");
-    if (multiplayerEndGameBtn) {
-      multiplayerEndGameBtn.addEventListener("click", () => this.endMultiplayerGame());
-    }
-
-    // Virtual Keyboard
+    // Virtual Keyboard - already using event delegation (good!)
     const keyboard = document.getElementById("keyboard");
     if (keyboard) {
       keyboard.addEventListener("click", (e) => {
         if (e.target.classList.contains("keyboard-key")) {
-          // Play button sound for keyboard clicks
           this.playButtonSound();
           this.handleLetterClick(e.target);
         }
@@ -327,46 +203,6 @@ class GameUI {
 
     // Physical Keyboard
     document.addEventListener("keydown", (e) => this.handleKeyPress(e));
-
-    // Modal close on background click
-    const modal = document.getElementById("game-over-modal");
-    if (modal) {
-      modal.addEventListener("click", (e) => {
-        if (e.target === modal) {
-          this.game.hideGameOverModal();
-        }
-      });
-    }
-
-    // Statistics modal close on background click
-    const statsModal = document.getElementById("statistics-modal");
-    if (statsModal) {
-      statsModal.addEventListener("click", (e) => {
-        if (e.target === statsModal) {
-          this.hideStatistics();
-        }
-      });
-    }
-
-    // Settings modal close on background click
-    const settingsModal = document.getElementById("settings-modal");
-    if (settingsModal) {
-      settingsModal.addEventListener("click", (e) => {
-        if (e.target === settingsModal) {
-          this.hideSettings();
-        }
-      });
-    }
-
-    // Help modal close on background click
-    const helpModal = document.getElementById("help-modal");
-    if (helpModal) {
-      helpModal.addEventListener("click", (e) => {
-        if (e.target === helpModal) {
-          this.hideHelp();
-        }
-      });
-    }
   }
 
   // ========================================

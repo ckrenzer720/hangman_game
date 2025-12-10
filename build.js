@@ -30,6 +30,7 @@ try {
 const SCRIPTS_DIR = path.join(__dirname, 'scripts');
 const BUILD_DIR = path.join(__dirname, 'dist');
 const ANALYZE = process.argv.includes('--analyze');
+const BUNDLE = process.argv.includes('--bundle') || !process.argv.includes('--no-bundle');
 
 // Ensure build directory exists
 if (!fs.existsSync(BUILD_DIR)) {
@@ -248,8 +249,7 @@ async function copyNonJSFiles() {
     }
   }
   
-  return { cssResults, cssTotalOriginal, cssTotalMinified };
-  
+  // Copy other files
   for (const { src, dest } of filesToCopy) {
     const srcPath = path.join(__dirname, src);
     const destPath = path.join(BUILD_DIR, dest);
@@ -262,6 +262,92 @@ async function copyNonJSFiles() {
       fs.copyFileSync(srcPath, destPath);
     }
   }
+  
+  return { cssResults, cssTotalOriginal, cssTotalMinified };
+}
+
+/**
+ * Bundle critical JavaScript files together
+ */
+async function bundleCriticalScripts() {
+  if (!BUNDLE) {
+    console.log('⚠️  Bundling disabled (use --bundle to enable)\n');
+    return null;
+  }
+
+  // Define critical scripts in load order
+  const criticalScripts = [
+    'scripts/utils.js',
+    'scripts/dom-utils.js',
+    'scripts/modal-manager.js',
+    'scripts/error-middleware.js',
+    'scripts/offline-manager.js',
+    'scripts/progress-manager.js',
+    'scripts/preferences-manager.js',
+    'scripts/data-validator.js',
+    'scripts/accessibility-manager.js',
+    'scripts/keyboard-accessibility.js',
+    'scripts/accessibility-enhancements.js',
+    'scripts/audio-manager.js',
+    'scripts/touch-accessibility.js',
+    'scripts/feedback-manager.js',
+    'scripts/theme-manager.js',
+    'scripts/game.js',
+    'scripts/ui.js',
+  ];
+
+  const bundlePath = path.join(BUILD_DIR, 'scripts', 'bundle.js');
+  const bundleDir = path.dirname(bundlePath);
+  if (!fs.existsSync(bundleDir)) {
+    fs.mkdirSync(bundleDir, { recursive: true });
+  }
+
+  let bundleContent = '// ========================================\n';
+  bundleContent += '// HANGMAN GAME - BUNDLED CRITICAL SCRIPTS\n';
+  bundleContent += '// ========================================\n\n';
+
+  let totalSize = 0;
+  const bundledFiles = [];
+
+  for (const script of criticalScripts) {
+    const scriptPath = path.join(__dirname, script);
+    if (fs.existsSync(scriptPath)) {
+      const content = fs.readFileSync(scriptPath, 'utf8');
+      bundleContent += `\n// ========================================\n`;
+      bundleContent += `// ${script}\n`;
+      bundleContent += `// ========================================\n\n`;
+      bundleContent += content;
+      bundleContent += '\n\n';
+      totalSize += content.length;
+      bundledFiles.push(script);
+    }
+  }
+
+  // Minify the bundle
+  let minifiedBundle = bundleContent;
+  let bundleSavings = 0;
+  
+  if (minify) {
+    try {
+      const result = await minify(bundleContent, minifyOptions);
+      if (!result.error) {
+        minifiedBundle = result.code;
+        bundleSavings = ((1 - minifiedBundle.length / bundleContent.length) * 100).toFixed(2);
+      }
+    } catch (error) {
+      console.warn('⚠️  Failed to minify bundle, using unminified version');
+    }
+  }
+
+  fs.writeFileSync(bundlePath, minifiedBundle);
+
+  return {
+    path: bundlePath,
+    originalSize: bundleContent.length,
+    minifiedSize: minifiedBundle.length,
+    savings: parseFloat(bundleSavings),
+    files: bundledFiles.length,
+  };
 }
 
 /**
@@ -269,6 +355,18 @@ async function copyNonJSFiles() {
  */
 async function build() {
   console.log('🔨 Starting build process...\n');
+  
+  // Bundle critical scripts if enabled
+  let bundleInfo = null;
+  if (BUNDLE) {
+    console.log('📦 Bundling critical scripts...\n');
+    bundleInfo = await bundleCriticalScripts();
+    if (bundleInfo) {
+      console.log(`✅ Bundle created: ${(bundleInfo.minifiedSize / 1024).toFixed(2)} KB`);
+      console.log(`   Files bundled: ${bundleInfo.files}`);
+      console.log(`   Savings: ${bundleInfo.savings}%\n`);
+    }
+  }
   
   const jsFiles = getJSFiles(SCRIPTS_DIR);
   console.log(`Found ${jsFiles.length} JavaScript files to process\n`);
@@ -306,6 +404,13 @@ async function build() {
   
   console.log('✅ Build complete!\n');
   console.log('Summary:');
+  if (bundleInfo) {
+    console.log(`  JavaScript Bundle:`);
+    console.log(`    Files bundled: ${bundleInfo.files}`);
+    console.log(`    Bundle size: ${(bundleInfo.minifiedSize / 1024).toFixed(2)} KB`);
+    console.log(`    Savings: ${bundleInfo.savings}%`);
+    console.log(`    Estimated HTTP requests saved: ${bundleInfo.files - 1}`);
+  }
   console.log(`  JavaScript files: ${jsFiles.length}`);
   console.log(`    Original: ${(totalOriginal / 1024).toFixed(2)} KB`);
   console.log(`    Minified: ${(totalMinified / 1024).toFixed(2)} KB`);
@@ -323,6 +428,12 @@ async function build() {
   // Write build info
   const buildInfo = {
     timestamp: new Date().toISOString(),
+    bundle: bundleInfo ? {
+      files: bundleInfo.files,
+      originalSize: bundleInfo.originalSize,
+      minifiedSize: bundleInfo.minifiedSize,
+      savings: bundleInfo.savings,
+    } : null,
     javascript: {
       files: results.length,
       originalSize: totalOriginal,
