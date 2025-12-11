@@ -642,6 +642,42 @@ class GameUtils {
       throw error;
     }
   }
+
+  /**
+   * Retry with exponential backoff
+   * @param {Function} fn - Function to retry
+   * @param {number} maxRetries - Maximum number of retries
+   * @param {number} baseDelay - Base delay in milliseconds
+   * @returns {Promise} - Promise that resolves with function result
+   */
+  static async retryWithBackoff(fn, maxRetries = 3, baseDelay = 1000) {
+    let lastError;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await fn();
+      } catch (error) {
+        lastError = error;
+
+        if (attempt === maxRetries) {
+          throw error;
+        }
+
+        const delay = baseDelay * Math.pow(2, attempt);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+
+    throw lastError;
+  }
+
+  /**
+   * Check if device is offline
+   * @returns {boolean} - True if offline
+   */
+  static isOffline() {
+    return !navigator.onLine;
+  }
 }
 
 // Export for use in other files

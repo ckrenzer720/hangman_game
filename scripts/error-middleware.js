@@ -637,63 +637,8 @@ class ErrorMessageFactory {
 /**
  * Network utilities with built-in error handling
  */
-class NetworkUtils {
-  /**
-   * Fetch with timeout and retry logic
-   */
-  static async fetchWithTimeout(url, options = {}, timeout = 10000) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-    try {
-      const response = await fetch(url, {
-        ...options,
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return response;
-    } catch (error) {
-      clearTimeout(timeoutId);
-      throw error;
-    }
-  }
-
-  /**
-   * Retry with exponential backoff
-   */
-  static async retryWithBackoff(fn, maxRetries = 3, baseDelay = 1000) {
-    let lastError;
-
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        return await fn();
-      } catch (error) {
-        lastError = error;
-
-        if (attempt === maxRetries) {
-          throw error;
-        }
-
-        const delay = baseDelay * Math.pow(2, attempt);
-        await new Promise((resolve) => setTimeout(resolve, delay));
-      }
-    }
-
-    throw lastError;
-  }
-
-  /**
-   * Check if offline
-   */
-  static isOffline() {
-    return !navigator.onLine;
-  }
-}
+// NetworkUtils methods have been merged into GameUtils to avoid duplication
+// Use GameUtils.fetchWithTimeout, GameUtils.retryWithBackoff, and GameUtils.isOffline instead
 
 // ========================================
 // EXPORTS
@@ -702,4 +647,10 @@ class NetworkUtils {
 // Export for use in other files
 window.ErrorMiddleware = ErrorMiddleware;
 window.ErrorMessageFactory = ErrorMessageFactory;
-window.NetworkUtils = NetworkUtils;
+
+// Maintain backward compatibility - alias NetworkUtils to GameUtils
+window.NetworkUtils = {
+  fetchWithTimeout: (...args) => GameUtils.fetchWithTimeout(...args),
+  retryWithBackoff: (...args) => GameUtils.retryWithBackoff(...args),
+  isOffline: () => GameUtils.isOffline(),
+};

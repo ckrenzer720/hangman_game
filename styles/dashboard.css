@@ -347,16 +347,9 @@
   margin-top: 20px;
 }
 
+/* Button styles removed - using base styles from main.css */
 .btn-secondary {
-  background: #6c757d;
-  color: white;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition: all 0.3s ease;
+  /* Using base .btn-secondary from main.css */
   display: flex;
   align-items: center;
   gap: 8px;
