@@ -385,10 +385,144 @@ class PerformanceMonitor {
     
     this.observers = [];
   }
+
+  /**
+   * Validate page load performance against targets
+   * @param {Object} targets - Performance targets
+   * @returns {Object} Validation results
+   */
+  validatePerformance(targets = {}) {
+    const defaultTargets = {
+      pageLoadTime: 2000, // 2 seconds
+      timeToInteractive: 3000, // 3 seconds
+      firstContentfulPaint: 1000, // 1 second
+      largestContentfulPaint: 1500, // 1.5 seconds
+    };
+
+    const validationTargets = { ...defaultTargets, ...targets };
+
+    if (!('performance' in window)) {
+      return { valid: true, message: 'Performance validation not supported' };
+    }
+
+    const results = {
+      valid: true,
+      violations: [],
+      metrics: {},
+      recommendations: []
+    };
+
+    try {
+      const timing = performance.timing;
+      const navigation = performance.getEntriesByType('navigation')[0];
+      
+      // Calculate page load time
+      const pageLoadTime = timing.loadEventEnd - timing.navigationStart;
+      results.metrics.pageLoadTime = pageLoadTime;
+
+      // Check page load time
+      if (pageLoadTime > validationTargets.pageLoadTime) {
+        results.valid = false;
+        results.violations.push({
+          metric: 'pageLoadTime',
+          actual: pageLoadTime,
+          target: validationTargets.pageLoadTime,
+          difference: pageLoadTime - validationTargets.pageLoadTime
+        });
+        results.recommendations.push('Consider reducing initial bundle size or using code splitting');
+      }
+
+      // Get Paint Timing API metrics if available
+      if ('PerformancePaintTiming' in window) {
+        const paintEntries = performance.getEntriesByType('paint');
+        
+        paintEntries.forEach(entry => {
+          if (entry.name === 'first-contentful-paint') {
+            results.metrics.firstContentfulPaint = entry.startTime;
+            
+            if (entry.startTime > validationTargets.firstContentfulPaint) {
+              results.valid = false;
+              results.violations.push({
+                metric: 'firstContentfulPaint',
+                actual: entry.startTime,
+                target: validationTargets.firstContentfulPaint,
+                difference: entry.startTime - validationTargets.firstContentfulPaint
+              });
+              results.recommendations.push('Optimize critical rendering path');
+            }
+          }
+        });
+      }
+
+      // Get LCP if available
+      if ('PerformanceObserver' in window) {
+        try {
+          const lcpObserver = new PerformanceObserver((list) => {
+            const entries = list.getEntries();
+            const lastEntry = entries[entries.length - 1];
+            results.metrics.largestContentfulPaint = lastEntry.renderTime || lastEntry.loadTime;
+            
+            if (results.metrics.largestContentfulPaint > validationTargets.largestContentfulPaint) {
+              results.valid = false;
+              results.violations.push({
+                metric: 'largestContentfulPaint',
+                actual: results.metrics.largestContentfulPaint,
+                target: validationTargets.largestContentfulPaint,
+                difference: results.metrics.largestContentfulPaint - validationTargets.largestContentfulPaint
+              });
+              results.recommendations.push('Optimize largest contentful element');
+            }
+          });
+          
+          lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
+        } catch (error) {
+          // LCP not supported
+        }
+      }
+
+      // Calculate Time to Interactive (approximation)
+      if (navigation) {
+        const domContentLoaded = navigation.domContentLoadedEventEnd - navigation.navigationStart;
+        const loadComplete = navigation.loadEventEnd - navigation.navigationStart;
+        const timeToInteractive = Math.max(domContentLoaded, loadComplete);
+        results.metrics.timeToInteractive = timeToInteractive;
+
+        if (timeToInteractive > validationTargets.timeToInteractive) {
+          results.valid = false;
+          results.violations.push({
+            metric: 'timeToInteractive',
+            actual: timeToInteractive,
+            target: validationTargets.timeToInteractive,
+            difference: timeToInteractive - validationTargets.timeToInteractive
+          });
+          results.recommendations.push('Reduce JavaScript execution time');
+        }
+      }
+
+    } catch (error) {
+      console.warn('[PerformanceMonitor] Error validating performance:', error);
+      results.valid = false;
+      results.error = error.message;
+    }
+
+    return results;
+  }
 }
 
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = PerformanceMonitor;
+}
+
+// Auto-initialize validator if script is loaded after page load
+if (typeof window !== 'undefined' && document.readyState === 'complete') {
+  setTimeout(() => {
+    if (window.performanceMonitor) {
+      const results = window.performanceMonitor.validatePerformance();
+      if (!results.valid && results.violations.length > 0) {
+        console.warn('[PerformanceMonitor] Performance validation failed:', results);
+      }
+    }
+  }, 2000);
 }
 

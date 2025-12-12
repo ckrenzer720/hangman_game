@@ -484,10 +484,225 @@ class AccessibilityManager {
       skipLinks: this.skipLinks.length
     };
   }
+
+  /**
+   * Enhance all buttons with keyboard support (Enter/Space)
+   * Merged from KeyboardAccessibilityEnhancer
+   */
+  enhanceAllButtons() {
+    const buttons = document.querySelectorAll('button, [role="button"]');
+    
+    buttons.forEach(button => {
+      if (button.dataset.keyboardEnhanced === 'true') return;
+      
+      if (!button.hasAttribute('tabindex') && button.getAttribute('tabindex') !== '-1') {
+        button.setAttribute('tabindex', '0');
+      }
+      
+      button.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          if (e.key === ' ') {
+            e.preventDefault();
+          }
+          
+          if (!button.disabled && !button.hasAttribute('aria-disabled')) {
+            button.click();
+          }
+        }
+      });
+      
+      button.dataset.keyboardEnhanced = 'true';
+    });
+  }
+
+  /**
+   * Enhance modals with proper focus trapping
+   * Merged from KeyboardAccessibilityEnhancer
+   */
+  enhanceModals() {
+    const modals = document.querySelectorAll('[role="dialog"], .modal, [class*="modal"]');
+    
+    modals.forEach(modal => {
+      this.setupModalFocusTrap(modal);
+    });
+    
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === 1) {
+            if (node.matches && (node.matches('[role="dialog"]') || node.matches('.modal') || node.matches('[class*="modal"]'))) {
+              this.setupModalFocusTrap(node);
+            }
+            const childModals = node.querySelectorAll && node.querySelectorAll('[role="dialog"], .modal, [class*="modal"]');
+            if (childModals) {
+              childModals.forEach(m => this.setupModalFocusTrap(m));
+            }
+          }
+        });
+      });
+    });
+    
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+
+  /**
+   * Setup focus trap for a modal
+   * Merged from KeyboardAccessibilityEnhancer
+   */
+  setupModalFocusTrap(modal) {
+    if (!this.focusTraps) {
+      this.focusTraps = new Map();
+    }
+    
+    if (modal.dataset.focusTrapSetup === 'true') return;
+    
+    const getFocusableElements = () => {
+      const selector = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+      return Array.from(modal.querySelectorAll(selector)).filter(el => {
+        return !el.disabled && 
+               el.offsetWidth > 0 && 
+               el.offsetHeight > 0 &&
+               window.getComputedStyle(el).visibility !== 'hidden';
+      });
+    };
+    
+    const trapFocus = (e) => {
+      if (e.key !== 'Tab') return;
+      
+      const focusableElements = getFocusableElements();
+      if (focusableElements.length === 0) return;
+      
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      
+      if (e.shiftKey) {
+        if (document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement.focus();
+        }
+      } else {
+        if (document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement.focus();
+        }
+      }
+    };
+    
+    modal.addEventListener('keydown', trapFocus);
+    modal.dataset.focusTrapSetup = 'true';
+    
+    this.focusTraps.set(modal, () => {
+      modal.removeEventListener('keydown', trapFocus);
+      delete modal.dataset.focusTrapSetup;
+    });
+  }
+
+  /**
+   * Enhance form controls with keyboard support
+   * Merged from KeyboardAccessibilityEnhancer
+   */
+  enhanceFormControls() {
+    const inputs = document.querySelectorAll('input, select, textarea');
+    
+    inputs.forEach(input => {
+      if (!input.hasAttribute('tabindex') && !input.disabled) {
+        input.setAttribute('tabindex', '0');
+      }
+      
+      if (input.type === 'text' || input.type === 'email' || input.tagName === 'TEXTAREA') {
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            const form = input.closest('form');
+            if (form) {
+              const submitBtn = form.querySelector('button[type="submit"], input[type="submit"]');
+              if (submitBtn && !submitBtn.disabled) {
+                e.preventDefault();
+                submitBtn.click();
+              }
+            }
+          }
+        });
+      }
+    });
+  }
+
+  /**
+   * Setup global keyboard handlers (Home/End keys)
+   * Merged from KeyboardAccessibilityEnhancer
+   */
+  setupGlobalKeyboardHandlers() {
+    const main = document.querySelector('main');
+    if (main && !main.hasAttribute('tabindex')) {
+      main.setAttribute('tabindex', '-1');
+    }
+    
+    document.addEventListener('keydown', (e) => {
+      const target = e.target;
+      
+      if (e.key === 'Home' && !e.ctrlKey && !e.metaKey) {
+        const container = target.closest('[role="list"], [role="listbox"], ul, ol');
+        if (container) {
+          const firstItem = container.querySelector('[role="listitem"], li, [tabindex="0"]');
+          if (firstItem) {
+            e.preventDefault();
+            firstItem.focus();
+          }
+        }
+      }
+      
+      if (e.key === 'End' && !e.ctrlKey && !e.metaKey) {
+        const container = target.closest('[role="list"], [role="listbox"], ul, ol');
+        if (container) {
+          const items = container.querySelectorAll('[role="listitem"], li, [tabindex="0"]');
+          if (items.length > 0) {
+            e.preventDefault();
+            items[items.length - 1].focus();
+          }
+        }
+      }
+    });
+  }
+
+  /**
+   * Re-enhance elements after dynamic content changes
+   * Merged from KeyboardAccessibilityEnhancer
+   */
+  reEnhance() {
+    this.enhanceAllButtons();
+    this.enhanceFormControls();
+  }
 }
 
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = AccessibilityManager;
+}
+
+// Auto-initialize keyboard enhancements
+if (typeof window !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.accessibilityManager) {
+        window.accessibilityManager.enhanceAllButtons();
+        window.accessibilityManager.enhanceModals();
+        window.accessibilityManager.enhanceFormControls();
+        window.accessibilityManager.setupGlobalKeyboardHandlers();
+      }
+    });
+  } else {
+    if (window.accessibilityManager) {
+      window.accessibilityManager.enhanceAllButtons();
+      window.accessibilityManager.enhanceModals();
+      window.accessibilityManager.enhanceFormControls();
+      window.accessibilityManager.setupGlobalKeyboardHandlers();
+    }
+  }
+  
+  // Maintain backward compatibility
+  if (!window.keyboardAccessibilityEnhancer && window.accessibilityManager) {
+    window.keyboardAccessibilityEnhancer = {
+      reEnhance: () => window.accessibilityManager?.reEnhance()
+    };
+  }
 }
 
