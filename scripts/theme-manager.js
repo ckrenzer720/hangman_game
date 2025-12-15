@@ -268,15 +268,92 @@ class ThemeManager {
       this.settings.difficulty = difficulty;
       this.saveSettings();
       this.dispatchThemeChangeEvent();
+      
+      // Update game state if game is available
+      if (window.game && window.game.gameState) {
+        window.game.gameState.difficulty = difficulty;
+        
+        // Check if current category is still available for new difficulty
+        const availableCategories = this.getAvailableCategoriesForDifficulty();
+        if (availableCategories.length > 0 && !availableCategories.includes(this.settings.category)) {
+          // Current category not available, switch to first available
+          const newCategory = availableCategories[0];
+          this.settings.category = newCategory;
+          if (window.game.gameState) {
+            window.game.gameState.category = newCategory;
+          }
+          if (window.ui) {
+            window.ui.showFeedback("info", `Category changed to ${this.categories[newCategory]?.name || newCategory} for this difficulty.`);
+          }
+        }
+      }
     }
   }
 
   setCategory(category) {
-    if (this.categories[category]) {
+    // Validate category exists in word lists for current difficulty
+    if (this.categories[category] && this.isCategoryAvailable(category)) {
       this.settings.category = category;
       this.saveSettings();
       this.dispatchThemeChangeEvent();
+      
+      // Update game state if game is available
+      if (window.game && window.game.gameState) {
+        window.game.gameState.category = category;
+        // Show feedback
+        if (window.ui) {
+          window.ui.showFeedback("success", `Category changed to ${this.categories[category].name}`);
+        }
+      }
+    } else {
+      console.warn(`Category "${category}" is not available for the current difficulty`);
+      if (window.ui) {
+        window.ui.showFeedback("error", `Category "${category}" is not available. Please select a different category.`);
+      }
     }
+  }
+
+  /**
+   * Check if a category is available for the current difficulty
+   * @param {string} category - Category to check
+   * @returns {boolean} - True if category is available
+   */
+  isCategoryAvailable(category) {
+    if (!window.game || !window.game.wordLists) {
+      return true; // Default to true if game not loaded yet
+    }
+    
+    const currentDifficulty = window.game.gameState?.difficulty || this.settings.difficulty || "medium";
+    const difficultyWords = window.game.wordLists[currentDifficulty];
+    
+    if (!difficultyWords) {
+      return false;
+    }
+    
+    return category in difficultyWords && Array.isArray(difficultyWords[category]) && difficultyWords[category].length > 0;
+  }
+
+  /**
+   * Get available categories for current difficulty
+   * @returns {Array} - Array of available category keys
+   */
+  getAvailableCategoriesForDifficulty() {
+    if (!window.game || !window.game.wordLists) {
+      // Return all categories if game not loaded
+      return Object.keys(this.categories);
+    }
+    
+    const currentDifficulty = window.game.gameState?.difficulty || this.settings.difficulty || "medium";
+    const difficultyWords = window.game.wordLists[currentDifficulty];
+    
+    if (!difficultyWords) {
+      return [];
+    }
+    
+    // Return only categories that exist in the word lists
+    return Object.keys(difficultyWords).filter(category => 
+      Array.isArray(difficultyWords[category]) && difficultyWords[category].length > 0
+    );
   }
 
   applyTheme() {
@@ -377,9 +454,14 @@ class ThemeManager {
       if (e.target.closest(".category-option")) {
         const option = e.target.closest(".category-option");
         const category = option.dataset.category;
-        if (category) {
+        if (category && this.isCategoryAvailable(category)) {
           this.selectCategoryOption(category);
           this.setCategory(category);
+        } else if (category) {
+          // Category not available - show error
+          if (window.ui) {
+            window.ui.showFeedback("error", `Category "${category}" is not available for the current difficulty.`);
+          }
         }
       }
     });
@@ -468,21 +550,29 @@ class ThemeManager {
         
         <div class="setting-group">
           <label class="setting-label">Word Category</label>
-          <div class="setting-description">Choose your preferred word category</div>
+          <div class="setting-description">Choose your preferred word category (based on current difficulty)</div>
           <div class="category-selector">
-            ${Object.entries(this.categories)
+            ${this.getAvailableCategoriesForDifficulty()
               .map(
-                ([key, category]) => `
+                (key) => {
+                  const category = this.categories[key];
+                  if (!category) return ''; // Skip if category metadata not found
+                  return `
               <div class="category-option ${
                 key === this.settings.category ? "selected" : ""
               }" data-category="${key}">
                 <div class="category-icon">${category.icon}</div>
                 <div class="category-name">${category.name}</div>
               </div>
-            `
+            `;
+                }
               )
+              .filter(html => html !== '') // Remove empty strings
               .join("")}
           </div>
+          ${this.getAvailableCategoriesForDifficulty().length === 0 ? 
+            '<div class="setting-description" style="color: #dc2626; margin-top: 10px;">⚠️ No categories available for current difficulty. Please change difficulty first.</div>' : 
+            ''}
         </div>
       </div>
       

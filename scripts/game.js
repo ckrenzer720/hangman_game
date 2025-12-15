@@ -72,9 +72,8 @@ class HangmanGame {
     this.retryCount = 0;
     this.maxRetries = 3;
 
+    // Gallows (beam, rope) are always visible - only body parts are drawn
     this.hangmanParts = [
-      "beam",
-      "rope",
       "head",
       "body",
       "left-arm",

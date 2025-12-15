@@ -5,65 +5,70 @@
 .hangman-figure {
   position: relative;
   width: 200px;
-  height: 300px;
+  height: 350px;
   margin: 0 auto;
 }
 
-/* Gallows Base */
+/* Gallows Base - Always visible */
 .hangman-figure::before {
   content: "";
   position: absolute;
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 120px;
-  height: 8px;
-  background: #d2b48c;
-  border-radius: 2px;
+  width: 140px;
+  height: 10px;
+  background: #8b6f47;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* Vertical Post */
+/* Vertical Post - Always visible */
 .hangman-figure::after {
   content: "";
   position: absolute;
-  bottom: 8px;
+  bottom: 10px;
   left: 50%;
   transform: translateX(-50%);
-  width: 8px;
-  height: 200px;
-  background: #d2b48c;
-  border-radius: 2px;
+  width: 10px;
+  height: 240px;
+  background: #8b6f47;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* Horizontal Beam */
+/* Horizontal Beam - Always visible */
 .hangman-figure .beam {
   position: absolute;
-  top: 20px;
+  top: 30px;
   left: 50%;
   transform: translateX(-50%);
-  width: 100px;
-  height: 8px;
-  background: #d2b48c;
-  border-radius: 2px;
+  width: 120px;
+  height: 10px;
+  background: #8b6f47;
+  border-radius: 4px;
+  opacity: 1 !important; /* Always visible */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* Rope - hangs from right end of beam */
+/* Rope - Always visible, hangs from center of beam */
 .hangman-figure .rope {
   position: absolute;
-  top: 28px;
-  left: calc(50% + 50px - 2px); /* Right end of beam (50% + 50px) minus half rope width (2px) */
+  top: 40px;
+  left: calc(50% - 2px); /* Center of beam, minus half rope width (2px) */
   width: 4px;
-  height: 30px;
-  background: #d2b48c;
+  height: 35px;
+  background: #6b5d4f;
   border-radius: 2px;
   z-index: 5;
+  opacity: 1 !important; /* Always visible */
 }
 
 /* Head - centered below rope */
 .hangman-figure .head {
   position: absolute;
-  top: 58px;
-  left: calc(50% + 50px - 20px); /* Same horizontal position as rope, minus half head width (20px) */
+  top: 75px;
+  left: calc(50% - 20px); /* Center, minus half head width (20px) */
   width: 40px;
   height: 40px;
   border: 4px solid #000000;
@@ -72,77 +77,75 @@
   z-index: 10;
 }
 
-/* Body - centered on head */
+/* Body - centered on head, extends downward */
 .hangman-figure .body {
   position: absolute;
-  top: 98px;
-  left: calc(50% + 50px - 2px); /* Same horizontal position as rope/head center, minus half body width (2px) */
+  top: 115px;
+  left: calc(50% - 2px); /* Center, minus half body width (2px) */
   width: 4px;
-  height: 80px;
+  height: 90px;
   background: #000000;
   border-radius: 2px;
   z-index: 10;
 }
 
-/* Left Arm */
+/* Left Arm - extends from body */
 .hangman-figure .left-arm {
   position: absolute;
-  top: 110px;
-  left: calc(50% + 50px - 2px); /* Start from body center */
-  transform: rotate(-30deg);
+  top: 125px;
+  left: calc(50% - 2px); /* Start from body center */
+  transform: rotate(-35deg);
   width: 4px;
-  height: 50px;
+  height: 55px;
   background: #000000;
   border-radius: 2px;
   transform-origin: top center;
   z-index: 10;
 }
 
-/* Right Arm */
+/* Right Arm - extends from body */
 .hangman-figure .right-arm {
   position: absolute;
-  top: 110px;
-  left: calc(50% + 50px - 2px); /* Start from body center */
-  transform: rotate(30deg);
+  top: 125px;
+  left: calc(50% - 2px); /* Start from body center */
+  transform: rotate(35deg);
   width: 4px;
-  height: 50px;
+  height: 55px;
   background: #000000;
   border-radius: 2px;
   transform-origin: top center;
   z-index: 10;
 }
 
-/* Left Leg */
+/* Left Leg - extends from bottom of body */
 .hangman-figure .left-leg {
   position: absolute;
-  top: 178px;
-  left: calc(50% + 50px - 2px); /* Start from body center */
-  transform: rotate(-20deg);
+  top: 205px;
+  left: calc(50% - 2px); /* Start from body center */
+  transform: rotate(-25deg);
   width: 4px;
-  height: 50px;
+  height: 60px;
   background: #000000;
   border-radius: 2px;
   transform-origin: top center;
   z-index: 10;
 }
 
-/* Right Leg */
+/* Right Leg - extends from bottom of body */
 .hangman-figure .right-leg {
   position: absolute;
-  top: 178px;
-  left: calc(50% + 50px - 2px); /* Start from body center */
-  transform: rotate(20deg);
+  top: 205px;
+  left: calc(50% - 2px); /* Start from body center */
+  transform: rotate(25deg);
   width: 4px;
-  height: 50px;
+  height: 60px;
   background: #000000;
   border-radius: 2px;
   transform-origin: top center;
   z-index: 10;
 }
 
-/* Hangman Figure Animation States */
-.hangman-figure .beam,
-.hangman-figure .rope,
+/* Hangman Figure Animation States - Only body parts are hidden initially */
 .hangman-figure .head,
 .hangman-figure .body,
 .hangman-figure .left-arm,
@@ -155,8 +158,7 @@
   transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.hangman-figure .beam.show,
-.hangman-figure .rope.show,
+/* Only body parts need the show class - gallows are always visible */
 .hangman-figure .head.show,
 .hangman-figure .body.show,
 .hangman-figure .left-arm.show,

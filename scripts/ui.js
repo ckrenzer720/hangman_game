@@ -2480,6 +2480,14 @@ class GameUI {
 
     // Get theme manager from global scope
     const themeManager = window.themeManager;
+    
+    // Ensure category selector shows only available categories
+    if (themeManager && window.game && window.game.wordLists) {
+      // Sync difficulty from game state
+      if (window.game.gameState && window.game.gameState.difficulty) {
+        themeManager.settings.difficulty = window.game.gameState.difficulty;
+      }
+    }
     if (!themeManager) {
       console.error("Theme manager not available");
       return;
