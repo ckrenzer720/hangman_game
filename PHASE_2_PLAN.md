@@ -7,3 +7,4 @@ Phase 2 focuses on enhancing the core hangman game with advanced features, impro
 ### Updates
 
 - [ ] look through and break up game.js file into smaller files if able
+- [ ] break up json arrays into separate file
