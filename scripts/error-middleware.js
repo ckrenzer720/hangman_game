@@ -415,8 +415,15 @@ class ErrorMiddleware {
 
   /**
    * Get fallback word list
+   * Uses WordLoader if available, otherwise returns minimal fallback
    */
   getFallbackWordList() {
+    // Use WordLoader if available (centralized fallback words)
+    if (typeof window !== "undefined" && window.WordLoader && WordLoader.getFallbackWords) {
+      return WordLoader.getFallbackWords();
+    }
+    
+    // Minimal fallback if WordLoader not loaded
     return {
       easy: {
         animals: ["cat", "dog", "bird", "fish", "lion", "bear", "wolf", "deer"],

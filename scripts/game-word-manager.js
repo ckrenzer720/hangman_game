@@ -63,27 +63,47 @@ const WordManagerMixin = {
         throw new Error("Network connection lost");
       }
 
-      // Try to fetch from server with timeout and retry logic
+      // Try to fetch from separate difficulty files using WordLoader
       // Use offline manager if available
       if (this.offlineManager) {
-        this.wordLists = await this.offlineManager.fetchWithFallback(
-          "data/words.json",
-          {},
-          "words"
-        );
+        // Create a fetch wrapper for offline manager
+        const fetchWrapper = async (url, options, cacheKey) => {
+          return await this.offlineManager.fetchWithFallback(
+            url,
+            options,
+            cacheKey
+          );
+        };
+        this.wordLists = await WordLoader.loadAllWords({}, fetchWrapper);
       } else {
-        const response = await NetworkUtils.retryWithBackoff(
-          async () => {
-            return await NetworkUtils.fetchWithTimeout(
-              "data/words.json",
-              {},
-              10000
-            );
-          },
-          this.maxRetries,
-          1000
-        );
-        this.wordLists = await response.json();
+        // Use WordLoader with retry logic
+        try {
+          this.wordLists = await NetworkUtils.retryWithBackoff(
+            async () => {
+              return await WordLoader.loadAllWords();
+            },
+            this.maxRetries,
+            1000
+          );
+        } catch (error) {
+          // Fallback to old single file if new structure fails
+          console.warn(
+            "Failed to load from separate files, trying legacy format:",
+            error
+          );
+          const response = await NetworkUtils.retryWithBackoff(
+            async () => {
+              return await NetworkUtils.fetchWithTimeout(
+                "data/words.json",
+                {},
+                10000
+              );
+            },
+            this.maxRetries,
+            1000
+          );
+          this.wordLists = await response.json();
+        }
       }
 
       // Validate word list
@@ -267,9 +287,14 @@ const WordManagerMixin = {
    * Uses fallback word list when all else fails
    */
   useFallbackWordList() {
-    this.wordLists = this.errorMiddleware
-      ? this.errorMiddleware.getFallbackWordList()
-      : this.getDefaultFallbackWords();
+    // Try WordLoader first, then error middleware, then default
+    if (window.WordLoader && WordLoader.getFallbackWords) {
+      this.wordLists = WordLoader.getFallbackWords();
+    } else if (this.errorMiddleware) {
+      this.wordLists = this.errorMiddleware.getFallbackWordList();
+    } else {
+      this.wordLists = this.getDefaultFallbackWords();
+    }
     this.wordsLoaded = true;
     this.isOfflineMode = true;
     this.init();
@@ -283,8 +308,15 @@ const WordManagerMixin = {
 
   /**
    * Get default fallback words if middleware is not available
+   * Falls back to WordLoader if available, otherwise uses minimal hardcoded list
    */
   getDefaultFallbackWords() {
+    // Use WordLoader if available
+    if (window.WordLoader && WordLoader.getFallbackWords) {
+      return WordLoader.getFallbackWords();
+    }
+    
+    // Minimal fallback (should rarely be used if WordLoader is loaded)
     return {
       easy: {
         animals: ["cat", "dog", "bird", "fish", "lion"],
