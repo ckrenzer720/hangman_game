@@ -1907,7 +1907,14 @@ class GameUI {
     try {
       const stats = this.game.getDashboardStatistics();
       const printWindow = window.open("", "_blank");
+      
+      if (!printWindow) {
+        this.showFeedback("error", "Please allow pop-ups to print statistics");
+        return;
+      }
 
+      // Use safer DOM manipulation instead of document.write
+      printWindow.document.open();
       printWindow.document.write(`
         <!DOCTYPE html>
         <html>
