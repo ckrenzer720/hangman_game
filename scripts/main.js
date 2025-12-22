@@ -114,10 +114,10 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then((registration) => {
-        console.log('Service Worker registered:', registration.scope);
+        if (window.logger) window.logger.debug('Service Worker registered:', registration.scope);
       })
       .catch((error) => {
-        console.warn('Service Worker registration failed:', error);
+        if (window.logger) window.logger.warn('Service Worker registration failed:', error);
       });
   });
 }
@@ -137,7 +137,7 @@ if (typeof CacheManager !== 'undefined' && typeof fetch !== 'undefined') {
 // Wait for DOM to be fully loaded
 document.addEventListener("DOMContentLoaded", async function () {
   performanceMonitor?.mark('dom-ready');
-  console.log("Hangman Game - Initializing...");
+  if (window.logger) window.logger.debug("Hangman Game - Initializing...");
 
   // Initialize error middleware
   const errorMiddleware = new ErrorMiddleware({
@@ -229,7 +229,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     performanceMonitor?.mark('word-loading-complete');
     performanceMonitor?.measure('word-loading', 'word-loading-start', 'word-loading-complete');
 
-    console.log("Words loaded, initializing UI...");
+    if (window.logger) window.logger.debug("Words loaded, initializing UI...");
 
     // Initialize UI with error handling
     performanceMonitor?.mark('ui-init-start');
@@ -304,15 +304,19 @@ document.addEventListener("DOMContentLoaded", async function () {
       
       setTimeout(() => {
         performanceMonitor.logReport();
-        console.log('📦 Bundle Size:', bundleSize);
-        if (memoryOptimizer) {
-          console.log('💾 Memory Stats:', memoryOptimizer.getStats());
+        if (window.logger) {
+          window.logger.debug('📦 Bundle Size:', bundleSize);
+          if (memoryOptimizer) {
+            window.logger.debug('💾 Memory Stats:', memoryOptimizer.getStats());
+          }
         }
       }, 1000);
     }
 
-    console.log("Hangman Game - Ready to play!");
-    console.log("Game state:", game.gameState);
+    if (window.logger) {
+      window.logger.debug("Hangman Game - Ready to play!");
+      window.logger.debug("Game state:", game.gameState);
+    }
 
     // Show welcome message
     ui.showFeedback(
@@ -320,7 +324,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       "Welcome to Hangman! Click a letter to start guessing."
     );
   } catch (error) {
-    console.error("Error initializing game:", error);
+    if (window.logger) window.logger.error("Error initializing game:", error);
 
     // Handle the error with recovery strategies
     const recoveryResult = errorMiddleware.handleError(
@@ -637,9 +641,9 @@ function initMinimalGame() {
 
 // Utility functions
 function debugGame() {
-  if (window.game) {
-    console.log("Current game state:", window.game.gameState);
-    console.log("Available words:", window.game.wordLists);
+  if (window.game && window.logger) {
+    window.logger.debug("Current game state:", window.game.gameState);
+    window.logger.debug("Available words:", window.game.wordLists);
   }
 }
 

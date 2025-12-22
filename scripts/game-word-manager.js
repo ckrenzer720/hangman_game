@@ -17,18 +17,18 @@ const WordManagerMixin = {
         if (this.dataValidator) {
           const validation = this.dataValidator.validateWordList(cachedWords);
           if (!validation.valid && validation.errors.length > 0) {
-            console.warn(
+            if (window.logger) window.logger.warn(
               "Cached word list validation failed, fetching fresh data"
             );
             // Continue to fetch fresh data
           } else {
             if (validation.recovered) {
-              console.log("Cached word list was automatically recovered");
+              if (window.logger) window.logger.debug("Cached word list was automatically recovered");
               this.cacheWords(cachedWords); // Save recovered version
             }
             this.wordLists = cachedWords;
             this.wordsLoaded = true;
-            console.log("Words loaded from cache:", this.wordLists);
+            if (window.logger) window.logger.debug("Words loaded from cache:", this.wordLists);
             this.init();
 
             // If online, try to update cache in background
@@ -43,7 +43,7 @@ const WordManagerMixin = {
         } else {
           this.wordLists = cachedWords;
           this.wordsLoaded = true;
-          console.log("Words loaded from cache:", this.wordLists);
+          if (window.logger) window.logger.debug("Words loaded from cache:", this.wordLists);
           this.init();
 
           // If online, try to update cache in background
@@ -87,7 +87,7 @@ const WordManagerMixin = {
           );
         } catch (error) {
           // Fallback to old single file if new structure fails
-          console.warn(
+          if (window.logger) window.logger.warn(
             "Failed to load from separate files, trying legacy format:",
             error
           );
@@ -110,7 +110,7 @@ const WordManagerMixin = {
       if (this.dataValidator) {
         const validation = this.dataValidator.validateWordList(this.wordLists);
         if (!validation.valid) {
-          console.warn("Word list validation errors:", validation.errors);
+          if (window.logger) window.logger.warn("Word list validation errors:", validation.errors);
           if (validation.errors.length > 0 && this.strictMode !== false) {
             throw new Error(
               "Word list validation failed: " + validation.errors.join(", ")
@@ -118,10 +118,10 @@ const WordManagerMixin = {
           }
         }
         if (validation.warnings.length > 0) {
-          console.warn("Word list validation warnings:", validation.warnings);
+          if (window.logger) window.logger.warn("Word list validation warnings:", validation.warnings);
         }
         if (validation.recovered) {
-          console.log("Word list was automatically recovered");
+          if (window.logger) window.logger.debug("Word list was automatically recovered");
         }
       }
 
@@ -132,12 +132,12 @@ const WordManagerMixin = {
       // Cache the words for offline use
       this.cacheWords(this.wordLists);
 
-      console.log("Words loaded successfully from server:", this.wordLists);
+      if (window.logger) window.logger.debug("Words loaded successfully from server:", this.wordLists);
 
       // Initialize the game once words are loaded
       this.init();
     } catch (error) {
-      console.error("Error loading words:", error);
+      if (window.logger) window.logger.error("Error loading words:", error);
 
       // Handle the error with recovery strategies
       const recoveryResult = this.errorMiddleware
@@ -152,7 +152,7 @@ const WordManagerMixin = {
           case "retry":
             this.retryCount++;
             if (this.retryCount <= this.maxRetries) {
-              console.log(
+              if (window.logger) window.logger.debug(
                 `Retrying word loading (attempt ${this.retryCount})...`
               );
               setTimeout(() => this.loadWords(), 1000 * this.retryCount);
@@ -224,7 +224,7 @@ const WordManagerMixin = {
         }
       }
     } catch (error) {
-      console.warn("Error loading cached words:", error);
+      if (window.logger) window.logger.warn("Error loading cached words:", error);
     }
     return null;
   },
@@ -253,7 +253,7 @@ const WordManagerMixin = {
       localStorage.setItem("hangman_cached_words", JSON.stringify(words));
       localStorage.setItem("hangman_words_cache_time", Date.now().toString());
     } catch (error) {
-      console.warn("Error caching words:", error);
+      if (window.logger) window.logger.warn("Error caching words:", error);
     }
   },
 
@@ -275,7 +275,7 @@ const WordManagerMixin = {
       if (response.ok) {
         const words = await response.json();
         this.cacheWords(words);
-        console.log("Words cache updated in background");
+        if (window.logger) window.logger.debug("Words cache updated in background");
       }
     } catch (error) {
       console.debug("Background word update failed:", error);
@@ -357,7 +357,7 @@ const WordManagerMixin = {
   selectRandomWord() {
     // Ensure gameState and practiceMode are initialized
     if (!this.gameState) {
-      console.error("gameState is not initialized");
+      if (window.logger) window.logger.error("gameState is not initialized");
       return;
     }
     if (!this.gameState.practiceMode) {
@@ -380,13 +380,13 @@ const WordManagerMixin = {
       !this.wordLists ||
       Object.keys(this.wordLists).length === 0
     ) {
-      console.warn("Words not loaded yet, skipping word selection");
+      if (window.logger) window.logger.warn("Words not loaded yet, skipping word selection");
       return;
     }
 
     const difficultyWords = this.wordLists[this.gameState.difficulty];
     if (!difficultyWords) {
-      console.error(`Invalid difficulty: ${this.gameState.difficulty}`);
+      if (window.logger) window.logger.error(`Invalid difficulty: ${this.gameState.difficulty}`);
       // Try to find a valid difficulty
       const validDifficulties = Object.keys(this.wordLists).filter((d) => {
         const diffWords = this.wordLists[d];
@@ -404,7 +404,7 @@ const WordManagerMixin = {
           return this.selectRandomWord();
         }
       }
-      console.error("No valid difficulty found. Cannot select word.");
+      if (window.logger) window.logger.error("No valid difficulty found. Cannot select word.");
       this._selectWordRetryCount = 0;
       return;
     }
@@ -414,13 +414,13 @@ const WordManagerMixin = {
 
     const categoryWords = difficultyWords[this.gameState.category];
     if (!categoryWords || categoryWords.length === 0) {
-      console.error(
+      if (window.logger) window.logger.error(
         `Invalid category: ${this.gameState.category} for difficulty: ${this.gameState.difficulty}`
       );
       // Fallback to first available category
       const availableCategories = Object.keys(difficultyWords);
       if (availableCategories.length === 0) {
-        console.error(
+        if (window.logger) window.logger.error(
           "No categories available for difficulty:",
           this.gameState.difficulty
         );
@@ -440,7 +440,7 @@ const WordManagerMixin = {
             return this.selectRandomWord();
           }
         }
-        console.error("No valid words available. Cannot select word.");
+        if (window.logger) window.logger.error("No valid words available. Cannot select word.");
         return;
       }
       this.gameState.category = availableCategories[0];
@@ -482,7 +482,7 @@ const WordManagerMixin = {
 
     // Safety check: ensure we have words to select from
     if (filtered.length === 0) {
-      console.error(
+      if (window.logger) window.logger.error(
         "No words available after filtering. Resetting filter and retrying."
       );
       // Reset seen words if in practice mode to allow retry
@@ -497,7 +497,7 @@ const WordManagerMixin = {
         // Retry with reset seen words
         return this.selectRandomWord();
       }
-      console.error(
+      if (window.logger) window.logger.error(
         "Cannot select word: filtered list is empty and cannot reset."
       );
       return;
@@ -508,7 +508,7 @@ const WordManagerMixin = {
 
     // Final safety check
     if (!this.gameState.currentWord) {
-      console.error("Selected word is undefined. This should not happen.");
+      if (window.logger) window.logger.error("Selected word is undefined. This should not happen.");
       return;
     }
 

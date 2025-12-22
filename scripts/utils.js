@@ -32,7 +32,7 @@ class GameUtils {
       localStorage.setItem(key, JSON.stringify(data));
       return true;
     } catch (error) {
-      console.error("Error saving to localStorage:", error);
+      if (window.logger) window.logger.error("Error saving to localStorage:", error);
       return false;
     }
   }
@@ -42,7 +42,7 @@ class GameUtils {
       const item = localStorage.getItem(key);
       return item ? JSON.parse(item) : defaultValue;
     } catch (error) {
-      console.error("Error loading from localStorage:", error);
+      if (window.logger) window.logger.error("Error loading from localStorage:", error);
       return defaultValue;
     }
   }
@@ -56,7 +56,7 @@ class GameUtils {
       }
       return true;
     } catch (error) {
-      console.error("Error clearing localStorage:", error);
+      if (window.logger) window.logger.error("Error clearing localStorage:", error);
       return false;
     }
   }
@@ -407,7 +407,7 @@ class GameUtils {
 
   static playSound(soundName) {
     // Placeholder for sound functionality
-    console.log(`Playing sound: ${soundName}`);
+    if (window.logger) window.logger.debug(`Playing sound: ${soundName}`);
   }
 
   static vibrate(pattern = [100]) {
@@ -570,7 +570,7 @@ class GameUtils {
     try {
       return fn();
     } catch (error) {
-      console.error(`Error in ${context}:`, error);
+      if (window.logger) window.logger.error(`Error in ${context}:`, error);
       return fallbackValue;
     }
   }

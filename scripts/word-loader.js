@@ -55,7 +55,7 @@ class WordLoader {
         wordLists[difficulty] = data;
         return { difficulty, success: true };
       } catch (error) {
-        console.warn(`Failed to load ${difficulty}.json:`, error);
+        if (window.logger) window.logger.warn(`Failed to load ${difficulty}.json:`, error);
         return { difficulty, success: false, error };
       }
     });
@@ -71,7 +71,7 @@ class WordLoader {
     // Log any failures
     const failed = results.filter((r) => !r.success);
     if (failed.length > 0) {
-      console.warn(
+      if (window.logger) window.logger.warn(
         `Failed to load ${failed.length} word list(s):`,
         failed.map((f) => f.difficulty).join(", ")
       );

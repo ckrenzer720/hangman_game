@@ -39,7 +39,7 @@ class ErrorMiddleware {
     this.registerRecoveryStrategies();
     this.isInitialized = true;
 
-    console.log("Error middleware initialized");
+    if (window.logger) window.logger.debug("Error middleware initialized");
   }
 
   /**
@@ -127,7 +127,7 @@ class ErrorMiddleware {
           { autoReported: true, ...options }
         );
       } catch (reportError) {
-        console.warn('Failed to auto-report error:', reportError);
+        if (window.logger) window.logger.warn('Failed to auto-report error:', reportError);
       }
     }
     const errorInfo = this.createErrorInfo(error, context, options);
@@ -212,7 +212,7 @@ class ErrorMiddleware {
           JSON.stringify(this.errorLog)
         );
       } catch (error) {
-        console.warn("Could not save error log to localStorage:", error);
+        if (window.logger) window.logger.warn("Could not save error log to localStorage:", error);
       }
     }
   }
@@ -231,11 +231,11 @@ class ErrorMiddleware {
       try {
         const result = strategy(error, options);
         if (result.success) {
-          console.log(`Recovery successful: ${result.message}`);
+          if (window.logger) window.logger.debug(`Recovery successful: ${result.message}`);
           return result;
         }
       } catch (recoveryError) {
-        console.warn("Recovery strategy failed:", recoveryError);
+        if (window.logger) window.logger.warn("Recovery strategy failed:", recoveryError);
       }
     }
 
@@ -288,7 +288,7 @@ class ErrorMiddleware {
             };
           }
         } catch (parseError) {
-          console.warn("Error parsing cached data:", parseError);
+          if (window.logger) window.logger.warn("Error parsing cached data:", parseError);
         }
       }
     }
@@ -554,7 +554,7 @@ class ErrorMiddleware {
     this.recoveryStrategies.clear();
     this.isInitialized = false;
 
-    console.log("Error middleware destroyed");
+    if (window.logger) window.logger.debug("Error middleware destroyed");
   }
 }
 

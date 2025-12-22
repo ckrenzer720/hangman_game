@@ -18,7 +18,7 @@ const StatisticsMixin = {
           const validation = this.dataValidator.validateStatistics(cached);
           if (validation.valid || validation.recovered) {
             if (validation.recovered && validation.fixes.length > 0) {
-              console.log(
+              if (window.logger) window.logger.debug(
                 "Statistics were automatically fixed:",
                 validation.fixes
               );
@@ -27,7 +27,7 @@ const StatisticsMixin = {
             }
             return cached;
           } else {
-            console.warn("Statistics validation failed, using defaults");
+            if (window.logger) window.logger.warn("Statistics validation failed, using defaults");
           }
         } else if (this.validateStatisticsStructure(cached)) {
           return cached;
@@ -51,7 +51,7 @@ const StatisticsMixin = {
             const validation = this.dataValidator.validateStatistics(parsed);
             if (validation.valid || validation.recovered) {
               if (validation.recovered && validation.fixes.length > 0) {
-                console.log(
+                if (window.logger) window.logger.debug(
                   "Statistics were automatically fixed:",
                   validation.fixes
                 );
@@ -62,7 +62,7 @@ const StatisticsMixin = {
               }
               return parsed;
             } else {
-              console.warn("Statistics validation failed:", validation.errors);
+              if (window.logger) window.logger.warn("Statistics validation failed:", validation.errors);
             }
           } else if (this.validateStatisticsStructure(parsed)) {
             // Migrate to cache manager if available

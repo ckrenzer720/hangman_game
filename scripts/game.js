@@ -119,11 +119,11 @@ class HangmanGame {
         settings.difficulty !== this.gameState.difficulty
       ) {
         this.gameState.difficulty = settings.difficulty;
-        console.log(`Difficulty changed to: ${settings.difficulty}`);
+        if (window.logger) window.logger.debug(`Difficulty changed to: ${settings.difficulty}`);
       }
       if (settings.category && settings.category !== this.gameState.category) {
         this.gameState.category = settings.category;
-        console.log(`Category changed to: ${settings.category}`);
+        if (window.logger) window.logger.debug(`Category changed to: ${settings.category}`);
       }
     }
   }
@@ -140,7 +140,7 @@ class HangmanGame {
       window.ui.showFeedback(type, message);
     } else {
       // Fallback if UI is not available
-      console.log(`${type.toUpperCase()}: ${message}`);
+      if (window.logger) window.logger.debug(`${type.toUpperCase()}: ${message}`);
     }
   }
 

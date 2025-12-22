@@ -40,9 +40,9 @@ if (!fs.existsSync(BUILD_DIR)) {
 // Configuration for minification
 const minifyOptions = {
   compress: {
-    drop_console: false, // Keep console.log for debugging
+    drop_console: true, // Remove console.log in production builds
     drop_debugger: true,
-    pure_funcs: ['console.debug', 'console.trace'],
+    pure_funcs: ['console.debug', 'console.trace', 'logger.debug'],
     passes: 2,
   },
   mangle: {
