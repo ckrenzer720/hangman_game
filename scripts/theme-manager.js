@@ -758,6 +758,8 @@ class ThemeManager {
       detail: {
         theme: this.currentTheme,
         fontSize: this.currentFontSize,
+        difficulty: this.settings.difficulty,
+        category: this.settings.category,
         settings: this.settings,
       },
     });

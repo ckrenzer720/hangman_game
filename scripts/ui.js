@@ -3255,18 +3255,28 @@ class GameUI {
   setupSettingsListeners() {
     // Listen for theme changes
     document.addEventListener("themeChanged", (event) => {
-      const { difficulty, category } = event.detail;
+      // Get difficulty and category from event detail or settings
+      const difficulty = event.detail.difficulty || event.detail.settings?.difficulty;
+      const category = event.detail.category || event.detail.settings?.category;
+      let shouldRestartGame = false;
 
       // Update game settings if they changed
       if (difficulty && difficulty !== this.game.gameState.difficulty) {
         this.game.gameState.difficulty = difficulty;
         this.updateDifficultyIndicator();
         this.showFeedback("info", `Difficulty changed to ${difficulty}`);
+        shouldRestartGame = true;
       }
 
       if (category && category !== this.game.gameState.category) {
         this.game.gameState.category = category;
         this.showFeedback("info", `Category changed to ${category}`);
+        shouldRestartGame = true;
+      }
+
+      // Restart the game with new difficulty/category if either changed
+      if (shouldRestartGame) {
+        this.startNewGame();
       }
     });
   }
