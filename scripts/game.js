@@ -48,8 +48,73 @@ class HangmanGame {
     // Initialize error middleware (will be set by main.js)
     this.errorMiddleware = null;
 
-    // Statistics tracking
-    this.statistics = this.loadStatistics();
+    // Statistics tracking - safely call mixin method if available
+    if (typeof this.loadStatistics === "function") {
+      this.statistics = this.loadStatistics();
+    } else if (typeof this.getDefaultStatistics === "function") {
+      this.statistics = this.getDefaultStatistics();
+    } else {
+      // Fallback default statistics structure
+      this.statistics = {
+        gamesPlayed: 0,
+        gamesWon: 0,
+        gamesLost: 0,
+        winPercentage: 0,
+        totalGuesses: 0,
+        averageGuessesPerGame: 0,
+        fastestCompletionTime: null,
+        longestStreak: 0,
+        currentStreak: 0,
+        bestStreak: 0,
+        totalPlayTime: 0,
+        averagePlayTime: 0,
+        difficultyStats: {
+          easy: {
+            played: 0,
+            won: 0,
+            lost: 0,
+            totalTime: 0,
+            averageTime: 0,
+            bestTime: null,
+          },
+          medium: {
+            played: 0,
+            won: 0,
+            lost: 0,
+            totalTime: 0,
+            averageTime: 0,
+            bestTime: null,
+          },
+          hard: {
+            played: 0,
+            won: 0,
+            lost: 0,
+            totalTime: 0,
+            averageTime: 0,
+            bestTime: null,
+          },
+        },
+        categoryStats: {},
+        lastPlayed: null,
+        gameHistory: [],
+        dailyStats: {},
+        weeklyStats: {},
+        monthlyStats: {},
+        performanceMetrics: {
+          accuracy: 0,
+          efficiency: 0,
+          consistency: 0,
+          improvement: 0,
+        },
+        streaks: {
+          current: 0,
+          best: 0,
+          longestLossStreak: 0,
+          currentLossStreak: 0,
+        },
+        achievements: { totalUnlocked: 0, recentlyUnlocked: [] },
+      };
+    }
 
     // Difficulty progression system
     this.difficultyProgression = {
@@ -63,8 +128,11 @@ class HangmanGame {
       difficultyOrder: ["easy", "medium", "hard"],
     };
 
-    // Achievement system
-    this.achievements = this.loadAchievements();
+    // Achievement system - safely call mixin method if available
+    this.achievements =
+      typeof this.loadAchievements === "function"
+        ? this.loadAchievements()
+        : {};
 
     this.wordLists = {};
     this.wordsLoaded = false;
@@ -85,9 +153,19 @@ class HangmanGame {
     // Timer for timed mode
     this.timerInterval = null;
 
-    this.loadWords();
+    // Load words - safely call mixin method if available
+    if (typeof this.loadWords === "function") {
+      this.loadWords();
+    }
+
     this.applySettingsFromThemeManager();
-    this.practiceProgress = this.loadPracticeProgress();
+
+    // Load practice progress - safely call mixin method if available
+    if (typeof this.loadPracticeProgress === "function") {
+      this.practiceProgress = this.loadPracticeProgress();
+    } else {
+      this.practiceProgress = { perCategory: {} };
+    }
   }
 
   /**
@@ -119,11 +197,13 @@ class HangmanGame {
         settings.difficulty !== this.gameState.difficulty
       ) {
         this.gameState.difficulty = settings.difficulty;
-        if (window.logger) window.logger.debug(`Difficulty changed to: ${settings.difficulty}`);
+        if (window.logger)
+          window.logger.debug(`Difficulty changed to: ${settings.difficulty}`);
       }
       if (settings.category && settings.category !== this.gameState.category) {
         this.gameState.category = settings.category;
-        if (window.logger) window.logger.debug(`Category changed to: ${settings.category}`);
+        if (window.logger)
+          window.logger.debug(`Category changed to: ${settings.category}`);
       }
     }
   }
@@ -140,20 +220,35 @@ class HangmanGame {
       window.ui.showFeedback(type, message);
     } else {
       // Fallback if UI is not available
-      if (window.logger) window.logger.debug(`${type.toUpperCase()}: ${message}`);
+      if (window.logger)
+        window.logger.debug(`${type.toUpperCase()}: ${message}`);
     }
   }
 
   init() {
-    this.selectRandomWord();
-    this.createHiddenWord();
+    // Safely call mixin methods if available
+    if (typeof this.selectRandomWord === "function") {
+      this.selectRandomWord();
+    }
+    if (typeof this.createHiddenWord === "function") {
+      this.createHiddenWord();
+    }
     this.updateDisplay();
-    this.startGameTimer();
+
+    // Start game timer if method is available
+    if (typeof this.startGameTimer === "function") {
+      this.startGameTimer();
+    } else {
+      // Fallback: manually set start time
+      this.gameState.gameStartTime = Date.now();
+    }
 
     // Start countdown timer if timed mode is enabled
     if (this.gameState.timedMode) {
       this.gameState.timeRemaining = this.gameState.timeLimit;
-      this.startCountdownTimer();
+      if (typeof this.startCountdownTimer === "function") {
+        this.startCountdownTimer();
+      }
     }
   }
 
@@ -250,17 +345,22 @@ class HangmanGame {
       this.gameState.gameStatus = "won";
 
       // Stop countdown timer
-      this.stopCountdownTimer();
+      if (typeof this.stopCountdownTimer === "function") {
+        this.stopCountdownTimer();
+      }
 
       // Calculate score based on difficulty and performance
-      const baseScore = this.calculateScore();
+      const baseScore =
+        typeof this.calculateScore === "function" ? this.calculateScore() : 0;
       this.gameState.score += baseScore;
 
       // Record best time in timed mode
       if (this.gameState.timedMode) {
         const timeUsed =
           this.gameState.timeLimit - this.gameState.timeRemaining;
-        this.recordBestTime(timeUsed);
+        if (typeof this.recordBestTime === "function") {
+          this.recordBestTime(timeUsed);
+        }
       }
 
       // Update score display
@@ -269,15 +369,21 @@ class HangmanGame {
       }
 
       // Update difficulty progression
-      this.updateDifficultyProgression();
+      if (typeof this.updateDifficultyProgression === "function") {
+        this.updateDifficultyProgression();
+      }
 
       // Check for achievements
-      this.checkAchievements();
+      if (typeof this.checkAchievements === "function") {
+        this.checkAchievements();
+      }
 
       // Add celebration effects
       this.triggerWinCelebration();
 
-      this.updateStatistics("won");
+      if (typeof this.updateStatistics === "function") {
+        this.updateStatistics("won");
+      }
 
       // Announce win to screen readers and play audio
       if (this.accessibilityManager) {
@@ -295,7 +401,8 @@ class HangmanGame {
           this.gameState.multiplayer.players[
             this.gameState.multiplayer.currentPlayerIndex
           ];
-        const roundScore = this.calculateScore();
+        const roundScore =
+          typeof this.calculateScore === "function" ? this.calculateScore() : 0;
         currentPlayer.score += roundScore;
         currentPlayer.wins += 1;
 
@@ -332,7 +439,9 @@ class HangmanGame {
       }
 
       // Check for challenge completion
-      this.checkChallengeCompletion();
+      if (typeof this.checkChallengeCompletion === "function") {
+        this.checkChallengeCompletion();
+      }
     }
   }
 
@@ -344,8 +453,9 @@ class HangmanGame {
 
     const gameResult = {
       won: this.gameState.gameStatus === "won",
-      score: this.calculateScore(),
-      time: this.endGameTimer(),
+      score:
+        typeof this.calculateScore === "function" ? this.calculateScore() : 0,
+      time: typeof this.endGameTimer === "function" ? this.endGameTimer() : 0,
       difficulty: this.gameState.difficulty,
       category: this.gameState.category,
       incorrectGuesses: this.gameState.incorrectGuesses.length,
@@ -396,7 +506,9 @@ class HangmanGame {
       // Add failure effects
       this.triggerFailureEffect();
 
-      this.updateStatistics("lost");
+      if (typeof this.updateStatistics === "function") {
+        this.updateStatistics("lost");
+      }
 
       // Announce loss to screen readers and play audio
       if (this.accessibilityManager) {
@@ -498,7 +610,9 @@ class HangmanGame {
 
   resetGame() {
     // Stop countdown timer
-    this.stopCountdownTimer();
+    if (typeof this.stopCountdownTimer === "function") {
+      this.stopCountdownTimer();
+    }
 
     // Preserve nested objects before reset - ensure they're always properly initialized
     const existingPracticeMode = this.gameState?.practiceMode;

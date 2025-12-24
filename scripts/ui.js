@@ -665,7 +665,9 @@ class GameUI {
       difficulty: difficulty,
       incorrectGuesses: incorrectGuesses,
       maxIncorrectGuesses: maxIncorrectGuesses,
-      stats: this.game.getStatistics(),
+      stats: typeof this.game.getStatistics === 'function' 
+        ? this.game.getStatistics() 
+        : {},
     };
 
     (window.shareSystemInstance || new ShareSystem()).showShareModal(shareData);
@@ -692,8 +694,12 @@ class GameUI {
       window.shareSystemInstance = new ShareSystem();
     }
 
-    const achievements = this.game.getAchievements();
-    const stats = this.game.getStatistics();
+    const achievements = typeof this.game.getAchievements === 'function' 
+      ? this.game.getAchievements() 
+      : {};
+    const stats = typeof this.game.getStatistics === 'function' 
+      ? this.game.getStatistics() 
+      : {};
     
     const unlockedAchievements = Object.entries(achievements)
       .filter(([key, value]) => value.unlocked)
@@ -1508,7 +1514,9 @@ class GameUI {
     const streakIndicator = document.getElementById("streak-indicator");
     if (!streakIndicator) return;
 
-    const stats = this.game.getStatistics();
+    const stats = typeof this.game.getStatistics === 'function' 
+      ? this.game.getStatistics() 
+      : { currentStreak: 0 };
     const currentStreak = stats.currentStreak || 0;
 
     streakIndicator.textContent = currentStreak.toString();
@@ -1579,7 +1587,11 @@ class GameUI {
     if (!content) return;
 
     try {
-      const stats = this.game.getDashboardStatistics();
+      const stats = typeof this.game.getDashboardStatistics === 'function' 
+        ? this.game.getDashboardStatistics() 
+        : (typeof this.game.getStatistics === 'function' 
+          ? this.game.getStatistics() 
+          : {});
       this.renderStatisticsDashboard(content, stats);
     } catch (error) {
       console.error("Error loading statistics:", error);
@@ -1905,7 +1917,11 @@ class GameUI {
    */
   printStatistics() {
     try {
-      const stats = this.game.getDashboardStatistics();
+      const stats = typeof this.game.getDashboardStatistics === 'function' 
+        ? this.game.getDashboardStatistics() 
+        : (typeof this.game.getStatistics === 'function' 
+          ? this.game.getStatistics() 
+          : {});
       const printWindow = window.open("", "_blank");
       
       if (!printWindow) {
@@ -2088,8 +2104,12 @@ class GameUI {
     if (!content) return;
 
     try {
-      const achievements = this.game.getAchievements();
-      const stats = this.game.getStatistics();
+      const achievements = typeof this.game.getAchievements === 'function' 
+        ? this.game.getAchievements() 
+        : {};
+      const stats = typeof this.game.getStatistics === 'function' 
+        ? this.game.getStatistics() 
+        : {};
       this.renderAchievementsContent(content, achievements, stats);
     } catch (error) {
       console.error("Error loading achievements:", error);
